@@ -80,10 +80,8 @@ Part 1 16 · Part 2 10 · Part 3 10세트 · Part 4 7세트 · Part 5 10.
 ## 문서
 
 - [app/README.md](app/README.md) — 상세 사용법, 문항 추가 방법, 저작권 정책
-- [docs/SERVICE_PLAN.md](docs/SERVICE_PLAN.md) — 초기 서비스 기획
-- [docs/V2_PATTERN_DRILL.md](docs/V2_PATTERN_DRILL.md) — 유형·만능 문장·드릴 설계
 
-설계 근거가 된 개인 리서치 노트는 저장소에 포함하지 않는다.
+설계 문서와 리서치 노트는 저장소에 포함하지 않는다.
 
 ## 데이터
 
