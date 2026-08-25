@@ -30,8 +30,34 @@ const App = {
     App.main = $('#main');
     $$tabs();
     window.addEventListener('hashchange', App.route);
+    await Store.probe();
+    App.showCapabilityBanner();
     await App.refreshCounts();
     App.route();
+  },
+
+  /* 이 브라우저에서 실제로 뭐가 되는지 확인해 알린다.
+     file:// 로 열었을 때 조용히 실패하는 걸 막는 게 목적. */
+  showCapabilityBanner() {
+    const isFile = location.protocol === 'file:';
+    const noStore = Store.backend === 'memory';
+    const noMic = !Recorder.supported();
+    if (!isFile && !noStore && !noMic) return;
+
+    const b = el('div', { class: 'capbar' });
+    let msg = '';
+    if (noMic) {
+      msg = '<b>이 브라우저에서 녹음을 쓸 수 없다.</b> Chrome·Edge·Safari 최신 버전에서 열어라.';
+    } else if (noStore) {
+      msg = '<b>녹음이 이 창에서만 유지된다.</b> 브라우저가 이 방식(file://)에서 저장소를 막았다. ' +
+            '새로고침하면 녹음이 사라진다. 영구 보관하려면 <code>start.command</code> 를 더블클릭해 열어라.';
+    } else if (isFile) {
+      msg = 'file:// 로 열려 있다. 녹음 권한을 매번 다시 물을 수 있다. ' +
+            '거슬리면 <code>start.command</code> 를 더블클릭해라.';
+    }
+    b.innerHTML = `<span>${msg}</span><button aria-label="닫기">✕</button>`;
+    b.querySelector('button').onclick = () => b.remove();
+    document.body.insertBefore(b, document.body.firstChild);
   },
 
   async refreshCounts() {
