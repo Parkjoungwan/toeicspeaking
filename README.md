@@ -69,6 +69,8 @@ Part 1 16 · Part 2 10 · Part 3 10세트 · Part 4 7세트 · Part 5 10.
 - [docs/SERVICE_PLAN.md](docs/SERVICE_PLAN.md) — 초기 서비스 기획
 - [docs/V2_PATTERN_DRILL.md](docs/V2_PATTERN_DRILL.md) — 유형·만능 문장·드릴 설계
 
+설계 근거가 된 개인 리서치 노트는 저장소에 포함하지 않는다.
+
 ## 데이터
 
 녹음은 이 브라우저의 IndexedDB에만 저장된다. 서버로 전송되지 않고, 저장소에도 올라가지 않는다.

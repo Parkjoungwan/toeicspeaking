@@ -12,3 +12,9 @@ node_modules/
 
 # 로컬 산출물
 *.log
+
+# 개인 리서치 노트 — 저장소에 올리지 않는다 (로컬에는 남는다)
+STT 툴 리서치.md
+TOEIC_Speaking_2026_문제_음원_리서치.md
+TOEIC_Speaking_PART1_학습자료.md
+토익 전반 리서치.md
