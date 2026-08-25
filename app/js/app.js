@@ -660,8 +660,8 @@ const Views = {
       w.appendChild(ml);
 
       const act = el('div', { class: 'row', style: 'margin-top:18px' });
-      const b = el('button', { class: 'btn primary' }, '문장 드릴 시작');
-      b.onclick = () => App.go('#/drill/2/multi/A');
+      const b = el('button', { class: 'btn primary' }, '말하기 드릴 시작 (3·2·1 → 녹음)');
+      b.onclick = () => App.go('#/drill/2/multi/B');
       act.appendChild(b);
       w.appendChild(act);
       App.set(w);
@@ -728,8 +728,8 @@ const Views = {
       w.appendChild(bc);
 
       const act = el('div', { class: 'row', style: 'margin-top:18px' });
-      const b1 = el('button', { class: 'btn primary' }, '문장 드릴 시작');
-      b1.onclick = () => App.go(`#/drill/2/${v.id}/A`);
+      const b1 = el('button', { class: 'btn primary' }, '말하기 드릴 시작 (3·2·1 → 녹음)');
+      b1.onclick = () => App.go(`#/drill/2/${v.id}/B`);
       act.appendChild(b1);
       w.appendChild(act);
       App.set(w);
@@ -785,10 +785,10 @@ const Views = {
     /* 드릴 시작 */
     w.appendChild(el('h3', {}, '드릴'));
     const modes = el('div', { class: 'grid c2' });
-    ['A', 'B', 'C', 'D'].forEach(m => {
+    ['B', 'D', 'A', 'C'].forEach(m => {
       const M = Drill.MODES[m];
       const c = el('button', { class: 'part-card' });
-      c.innerHTML = `<div class="no">모드 ${M.id}</div>
+      c.innerHTML = `<div class="no">모드 ${M.id}${m === 'B' ? ' · 기본' : ''}</div>
         <div class="ttl">${esc(M.ko)}</div>
         <div style="font-size:13px;color:var(--text-2);margin-top:6px;line-height:1.6">${esc(M.desc)}</div>
         <div class="meta">
@@ -1187,7 +1187,7 @@ const DrillUI = {
 
     // Part 2 변형은 파트 공통 문장으로 드릴한다
     if (t.variant) {
-      const fake = { id: t.variant.id, ko: `Part 2 · ${t.variant.ko}`, sentences: PATTERNS[2].sentences,
+      const fake = { id: t.variant.id, ko: t.variant.ko, sentences: PATTERNS[2].sentences,
                      blocks: PATTERNS[2].blocks.map(b => b.ko), appears: 'Q3–4', sec: 30, cue: '', mistakes: PATTERNS[2].mistakes };
       Drill.state = {
         typePath, mode, typeData: { part: '2', partData: PATTERNS[2], type: fake },
@@ -1277,7 +1277,7 @@ const DrillUI = {
     const tpl = el('div', { class: 'dr-tpl' });
     tpl.innerHTML = tplHTML(item.sentence.tpl);
     st.appendChild(tpl);
-    st.appendChild(el('div', { class: 'dr-tplko' }, esc(item.sentence.ko)));
+    st.appendChild(el('div', { class: 'dr-tplko' }, tplHTML(item.sentence.ko)));
 
     // 상황 카드
     const sit = el('div', { class: 'dr-sit' });
