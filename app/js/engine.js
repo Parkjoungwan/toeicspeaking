@@ -40,12 +40,69 @@ const Runlist = {
     return segs;
   },
 
+  /* ----------------------------------------------------------
+     출제 우선순위
+     순수 무작위는 방금 푼 지문을 또 뽑는다(실측 연속 2회 겹칠 확률 22%).
+     그래서 세 신호로 점수를 매겨 높은 것부터 뽑는다.
+
+       1) 안 푼 문항        — 가장 크게 우대. 풀을 먼저 소진시킨다.
+       2) 자가채점이 낮은 것 — 못한 문항을 다시 만나게 한다.
+       3) 오래된 것          — 같은 점수면 오래 안 본 쪽.
+
+     Store 가 비어 있거나 조회에 실패하면 무작위로 조용히 되돌아간다.
+     ---------------------------------------------------------- */
+  stats: null,          // { [questionId]: { n, lastAt, score } }
+
+  async loadStats() {
+    try {
+      const all = await Store.all();
+      const m = {};
+      all.forEach(a => {
+        const base = String(a.questionId).split('#')[0];
+        if (!m[base]) m[base] = { n: 0, lastAt: 0, sum: 0, cnt: 0 };
+        const s = m[base];
+        s.n++;
+        s.lastAt = Math.max(s.lastAt, a.startedAt || 0);
+        const vals = Object.values(a.selfCheck || {});
+        if (vals.length) { s.sum += vals.reduce((x, y) => x + y, 0) / vals.length; s.cnt++; }
+      });
+      Object.values(m).forEach(s => { s.score = s.cnt ? s.sum / s.cnt : null; });
+      Runlist.stats = m;
+    } catch (e) { Runlist.stats = null; }
+    return Runlist.stats;
+  },
+
+  /* 문항 하나의 출제 가중치. 클수록 자주 나온다.
+     상위 N개를 그냥 자르면 다 푼 뒤 매번 같은 문항만 나와 모의고사가 굳는다.
+     그래서 이 값을 확률 가중치로 쓰고 뽑기는 무작위로 한다. */
+  priority(q) {
+    const st = Runlist.stats && Runlist.stats[q.id];
+    if (!st || !st.n) return 400;                                // 안 푼 문항 최우선
+    let p = 20;                                                  // 바닥값 — 아무리 잘해도 가끔은 나온다
+    if (st.score != null) p += (3 - st.score) * 40;              // 낮은 점수일수록 높게 (0~120)
+    const days = (Date.now() - st.lastAt) / 86400000;
+    p += Math.min(days, 30) * 3;                                 // 오래될수록 높게 (0~90)
+    p -= Math.min(st.n, 5) * 5;                                  // 많이 푼 건 조금 낮게
+    return Math.max(5, p);
+  },
+
   /* 풀 모의고사 — 현행 11문항 구성: P1×2, P2×2, P3세트1(3), P4세트1(3), P5×1 */
   mock() {
     const pick = (arr, n) => {
-      const c = [...arr];
+      if (!Runlist.stats) {   // 기록이 없으면 기존대로 무작위
+        const c = [...arr]; const out = [];
+        while (out.length < n && c.length) out.push(c.splice(Math.floor(Math.random() * c.length), 1)[0]);
+        return out;
+      }
+      // 가중 무작위 · 비복원 추출
+      const pool = arr.map(q => ({ q, w: Runlist.priority(q) }));
       const out = [];
-      while (out.length < n && c.length) out.push(c.splice(Math.floor(Math.random() * c.length), 1)[0]);
+      while (out.length < n && pool.length) {
+        let r = Math.random() * pool.reduce((s, x) => s + x.w, 0);
+        let i = 0;
+        while (i < pool.length - 1 && (r -= pool[i].w) > 0) i++;
+        out.push(pool.splice(i, 1)[0].q);
+      }
       return out;
     };
     const segs = [];

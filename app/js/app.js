@@ -153,10 +153,27 @@ const Views = {
         <div style="flex:1;min-width:200px">
           <div style="font-weight:650;font-size:16px;letter-spacing:-.01em">풀 모의고사</div>
           <div style="font-size:13px;color:var(--text-3);margin-top:2px">11문항 · 약 20분 · 중단 없이 끝까지</div>
+          <div id="mock-note" style="font-size:12.5px;color:var(--accent);margin-top:5px"></div>
         </div>
         <button class="btn primary big" id="go-mock">시작</button>
       </div>`;
-    mock.querySelector('#go-mock').onclick = () => Exam.start(Runlist.mock(), 'mock', '풀 모의고사');
+    mock.querySelector('#go-mock').onclick = async () => {
+      const b = mock.querySelector('#go-mock');
+      b.disabled = true; b.textContent = '문항 고르는 중…';
+      await Runlist.loadStats();          // 안 푼 문항·낮은 점수 우선
+      b.disabled = false; b.textContent = '시작';
+      Exam.start(Runlist.mock(), 'mock', '풀 모의고사');
+    };
+    // 출제 방식을 화면에 밝힌다
+    Runlist.loadStats().then(() => {
+      const st = Runlist.stats || {};
+      const pool = [...PART1, ...PART2, ...PART3, ...PART4, ...PART5];
+      const fresh = pool.filter(q => !st[q.id]).length;
+      const note = mock.querySelector('#mock-note');
+      if (note) note.textContent = fresh
+        ? `아직 안 푼 문항 ${fresh}개를 먼저 출제한다`
+        : '전부 한 번씩 풀었다 — 점수가 낮고 오래된 문항부터 출제한다';
+    });
     w.appendChild(mock);
 
     w.appendChild(el('h2', {}, '파트별 연습'));
