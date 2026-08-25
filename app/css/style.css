@@ -589,3 +589,18 @@ footer.legal {
   border-top: 1px solid var(--line-soft);
 }
 body.exam-mode footer.legal, body.drill-mode footer.legal { display: none; }
+
+/* 좁은 화면 헤더 정리 — 제목 부제를 숨기고 탭을 줄인다 */
+@media (max-width: 560px) {
+  header.top .inner { padding: 10px 14px; gap: 8px; }
+  .brand { font-size: 14px; white-space: nowrap; }
+  .brand span { display: none; }
+  nav.tabs { gap: 2px; }
+  nav.tabs button {
+    padding: 6px 8px; font-size: 13px; white-space: nowrap;
+  }
+}
+@media (max-width: 400px) {
+  .brand { font-size: 13px; }
+  nav.tabs button { padding: 6px 6px; font-size: 12.5px; }
+}
