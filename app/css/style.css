@@ -547,3 +547,17 @@ button.fw .sp { opacity: .55; font-size: 11px; }
 button.fw:hover .sp { opacity: 1; }
 .dr-refs .ref.say { cursor: pointer; }
 .dr-refs .ref.say:hover { color: var(--ok); }
+
+/* 복귀 줄 */
+.returnbar {
+  display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+  background: var(--accent-soft); border-radius: var(--radius);
+  padding: 11px 15px; margin-top: 20px; font-size: 13.5px; color: var(--accent);
+}
+.returnbar span { flex: 1; min-width: 160px; }
+.returnbar button {
+  background: var(--accent); border: 0; color: #fff; font-weight: 600;
+  border-radius: 8px; padding: 7px 14px; cursor: pointer; font-size: 13.5px;
+}
+.returnbar button:hover { filter: brightness(1.08); }
+a.btn { text-decoration: none; display: inline-block; }

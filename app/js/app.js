@@ -104,9 +104,37 @@ const App = {
 function $$tabs() {
   $('#tabs').addEventListener('click', e => {
     const b = e.target.closest('button[data-v]');
-    if (b) App.go('#/' + b.dataset.v);
+    // 탭을 직접 누른 건 "일부러 떠난다"는 뜻이므로 복귀 지점을 지운다
+    if (b) { Nav.clear(); App.go('#/' + b.dataset.v); }
   });
 }
+
+/* ============================================================
+   복귀 지점 — 리포트에서 문장 세트·드릴로 들어갔을 때 돌아올 곳을 기억한다.
+   sessionStorage 라 새로고침해도 살아남고 탭마다 독립적이다.
+   ============================================================ */
+const Nav = {
+  KEY: 'ts-returnto',
+  set(hash, label) {
+    try { sessionStorage.setItem(Nav.KEY, JSON.stringify({ hash, label })); } catch (e) {}
+  },
+  get() {
+    try { return JSON.parse(sessionStorage.getItem(Nav.KEY) || 'null'); } catch (e) { return null; }
+  },
+  clear() { try { sessionStorage.removeItem(Nav.KEY); } catch (e) {} },
+
+  /* 화면 맨 위에 붙이는 복귀 줄. 복귀 지점이 없으면 null */
+  bar() {
+    const r = Nav.get();
+    if (!r) return null;
+    const d = el('div', { class: 'returnbar' });
+    d.innerHTML = `<span>풀던 문항 <b>${esc(r.label)}</b> 에서 넘어왔다</span>`;
+    const b = el('button', {}, '← 리포트로 돌아가기');
+    b.onclick = () => { const h = r.hash; Nav.clear(); App.go(h); };
+    d.appendChild(b);
+    return d;
+  }
+};
 
 /* ============================================================
    화면
@@ -369,11 +397,24 @@ const Views = {
             <div style="font-size:13px;color:var(--text-3);margin-top:2px">${esc(t.type ? t.type.cue : '골격 5블록')}</div>
           </div>`;
         const r = el('div', { class: 'row' });
-        const b1 = el('button', { class: 'btn' }, '만능 문장 보기');
-        b1.onclick = () => App.go('#/patterns/' + typePath);
-        const b2 = el('button', { class: 'btn primary' }, '빈칸 드릴');
-        b2.onclick = () => App.go(`#/drill/${typePath}/B`);
-        r.append(b1, b2);
+        const label = `Part ${t.part} · ${q ? (q.tone || q.label || q.topic || q.title || '') : ''}`;
+        const mk = (cls, text, hash) => {
+          // 앵커라서 ⌘/Ctrl+클릭이면 새 창으로 열린다. 그때는 복귀 지점을 건드리지 않는다.
+          const a = el('a', { class: 'btn ' + cls, href: hash });
+          a.textContent = text;
+          a.onclick = e => {
+            if (e.metaKey || e.ctrlKey || e.shiftKey || e.button === 1) return;  // 새 창은 그대로
+            e.preventDefault();
+            Nav.set('#/review/' + a.dataset.rid, label);
+            App.go(hash);
+          };
+          a.dataset.rid = String(id);
+          return a;
+        };
+        r.append(mk('', '만능 문장 보기', '#/patterns/' + typePath),
+                 mk('primary', '빈칸 드릴', `#/drill/${typePath}/B`));
+        c.appendChild(el('div', { style: 'flex-basis:100%;font-size:12.5px;color:var(--text-3);margin-top:2px' },
+          '⌘(Ctrl)+클릭하면 새 창에서 열려 이 리포트를 그대로 둘 수 있다.'));
         c.appendChild(r);
         w.appendChild(c);
       }
@@ -551,6 +592,7 @@ const Views = {
     const P = PATTERNS[p];
     if (!P) return Views.patterns();
     const w = el('div');
+    const rb0 = Nav.bar(); if (rb0) w.appendChild(rb0);
     w.appendChild(el('div', { class: 'row', style: 'margin-top:24px' },
       `<button class="btn ghost" id="back">← 문장 세트</button>`));
     w.querySelector('#back').onclick = () => App.go('#/patterns');
@@ -636,6 +678,7 @@ const Views = {
     const P = t.partData;
     const w = el('div');
 
+    const rb1 = Nav.bar(); if (rb1) w.appendChild(rb1);
     w.appendChild(el('div', { class: 'row', style: 'margin-top:24px' },
       `<button class="btn ghost" id="back">← Part ${P.part}</button>`));
     w.querySelector('#back').onclick = () => App.go('#/patterns/' + p);
@@ -1143,13 +1186,15 @@ const DrillUI = {
         <span id="dr-count"></span>
         <span class="sp"></span>
         <span id="dr-clock" class="dr-clock"></span>
-        <button id="dr-quit">나가기</button>
+        <button id="dr-quit"></button>
       </div>
       <div class="drill-body"><div class="drill-stage" id="dr-stage"></div></div>`;
     document.body.appendChild(n);
     document.body.classList.add('drill-mode');
     DrillUI.node = n;
-    $('#dr-quit', n).onclick = () => DrillUI.finish(true);
+    const q = $('#dr-quit', n);
+    q.textContent = Nav.get() ? '← 리포트로' : '나가기';
+    q.onclick = () => DrillUI.finish(true);
   },
 
   unmount() {
@@ -1378,7 +1423,12 @@ const DrillUI = {
     DrillUI.unmount();
     Drill.clear();
 
-    if (aborted || !sum || !sum.answered) { App.go('#/patterns/' + typePath.split('/')[0]); return; }
+    if (aborted || !sum || !sum.answered) {
+      const ret = Nav.get();
+      if (ret) { const h = ret.hash; Nav.clear(); App.go(h); }
+      else App.go('#/patterns/' + typePath.split('/')[0]);
+      return;
+    }
 
     /* 결과는 #/drilldone 라우트가 그린다.
        여기서 직접 그리면 해시 변경으로 발생하는 route() 가 덮어쓴다. */
@@ -1420,7 +1470,13 @@ const DrillUI = {
     });
 
     const act = el('div', { class: 'row', style: 'margin-top:18px' });
-    const again = el('button', { class: 'btn primary' }, '다시 하기');
+    const ret = Nav.get();
+    if (ret) {
+      const rb = el('button', { class: 'btn primary' }, '← 리포트로 돌아가기');
+      rb.onclick = () => { const h = ret.hash; Nav.clear(); App.go(h); };
+      act.appendChild(rb);
+    }
+    const again = el('button', { class: ret ? 'btn' : 'btn primary' }, '다시 하기');
     again.onclick = () => App.go(`#/drill/${typePath}/${mode}`);
     const back = el('button', { class: 'btn' }, '유형으로');
     back.onclick = () => App.go('#/patterns/' + typePath);
