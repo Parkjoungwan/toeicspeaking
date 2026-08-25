@@ -645,11 +645,17 @@ const Views = {
       w.appendChild(el('h3', {}, '장면 변형 — 어느 블록을 늘릴지가 달라진다'));
       const vg = el('div', { class: 'grid c2' });
       P.variants.forEach(v => {
-        const c = el('button', { class: 'part-card' });
+        const c = el('div', { class: 'part-card pick', role: 'button', tabindex: '0' });
         c.innerHTML = `<div class="ttl">${esc(v.ko)}</div>
           <div class="meta"><span class="pill accent">${v.expand.join(' · ')} 확장</span></div>
           <div style="font-size:13px;color:var(--text-2);margin-top:8px;line-height:1.6">${mdInline(v.why)}</div>`;
-        c.onclick = () => App.go(`#/patterns/2/${v.id}`);
+        const go = () => App.go(`#/patterns/2/${v.id}`);
+        c.onclick = go;
+        c.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go(); } };
+        const d = el('button', { class: 'btn drillnow', style: 'margin-top:12px' });
+        d.innerHTML = '▸ 이 변형으로 드릴';
+        d.onclick = e => { e.stopPropagation(); App.go(`#/drill/2/${v.id}/B`); };
+        c.appendChild(d);
         vg.appendChild(c);
       });
       w.appendChild(vg);
@@ -659,11 +665,6 @@ const Views = {
       P.mistakes.forEach(m => ml.appendChild(el('li', {}, mdInline(m))));
       w.appendChild(ml);
 
-      const act = el('div', { class: 'row', style: 'margin-top:18px' });
-      const b = el('button', { class: 'btn primary' }, '말하기 드릴 시작 (3·2·1 → 녹음)');
-      b.onclick = () => App.go('#/drill/2/multi/B');
-      act.appendChild(b);
-      w.appendChild(act);
       App.set(w);
       return;
     }
@@ -679,16 +680,23 @@ const Views = {
     P.types.forEach((t, i) => {
       const path = `${p}/${t.id}`;
       const done = drills.filter(d => d.typePath === path).length;
-      const btn = el('button', { class: 'q-item' });
-      btn.innerHTML = `
+      const n = Drill.build(t, 'B').length;
+      const row = el('div', { class: 'q-item pick', role: 'button', tabindex: '0' });
+      row.innerHTML = `
         <span class="idx">${t.id.toUpperCase()}</span>
         <span class="body">
           <span class="t">${esc(t.ko)} <span class="pill">${t.appears}</span> <span class="pill">${t.sec}초</span></span>
           <span class="s">${esc(t.cue)}</span>
         </span>
         ${done ? `<span class="done">${done}회</span>` : ''}`;
-      btn.onclick = () => App.go(`#/patterns/${p}/${t.id}`);
-      ul.appendChild(btn);
+      const go = () => App.go(`#/patterns/${p}/${t.id}`);
+      row.onclick = go;
+      row.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go(); } };
+      const d = el('button', { class: 'btn drillnow', title: '이 유형만 바로 드릴' });
+      d.innerHTML = `▸ 드릴 <span class="n">${n}</span>`;
+      d.onclick = e => { e.stopPropagation(); App.go(`#/drill/${p}/${t.id}/B`); };
+      row.appendChild(d);
+      ul.appendChild(row);
     });
     w.appendChild(ul);
     App.set(w);
