@@ -1,0 +1,16 @@
+/*
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  X-Frame-Options: SAMEORIGIN
+  Permissions-Policy: microphone=(self), camera=(), geolocation=()
+
+# 파일명에 해시가 없어서 공격적으로 캐시되면 코드를 고쳐도 반영되지 않는다.
+# 매번 재검증하게 둔다. 전체 364KB 라 비용이 사실상 없다.
+/
+  Cache-Control: no-cache
+/index.html
+  Cache-Control: no-cache
+/js/*
+  Cache-Control: no-cache
+/css/*
+  Cache-Control: no-cache
