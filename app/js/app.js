@@ -766,7 +766,7 @@ const Views = {
             <span class="slot-meta"><b>${esc(sl.label)}</b>${sl.hint ? ' · ' + esc(sl.hint) : ''}<br>
             <span class="slot-eg">${(sl.eg || []).map(e => esc(e)).join(' / ')}</span></span></div>`;
         }).join('')}</div>` : ''}
-        ${s.drills && s.drills.length ? `<div class="sent-act"><button class="btn" data-sid="${s.id}">이 문장만 5연속 드릴</button><button class="btn ghost" data-say="1">▸ 예시 듣기</button></div>` : ''}`;
+        ${s.drills && s.drills.length ? `<div class="sent-act"><button class="btn" data-sid="${s.id}">이 문장만 집중 드릴</button><button class="btn ghost" data-say="1">▸ 예시 듣기</button></div>` : ''}`;
       const b = c.querySelector('button[data-sid]');
       if (b) b.onclick = () => App.go(`#/drill/${p}/${tid}/B/${s.id}`);
       const sb = c.querySelector('button[data-say]');
@@ -1268,7 +1268,9 @@ const DrillUI = {
     const T = s.typeData;
     $('#dr-title', DrillUI.node).textContent =
       `Part ${T.part} · ${T.type.ko} — 모드 ${M.id} ${M.ko}`;
-    $('#dr-count', DrillUI.node).textContent = `${s.i + 1} / ${s.items.length}`;
+    const blk = item.sentence && item.sentence.block ? item.sentence.block : '';
+    $('#dr-count', DrillUI.node).textContent =
+      `${s.i + 1} / ${s.items.length}` + (blk ? `  ·  ${blk}` : '');
 
     const st = $('#dr-stage', DrillUI.node);
     st.innerHTML = '';

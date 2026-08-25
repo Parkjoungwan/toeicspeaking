@@ -73,7 +73,7 @@ const Drill = {
     A: { id: 'A', ko: '슬롯 채우기', sec: 12, speak: false,
          desc: '타이핑. 빈칸에 뭐가 들어가는지 익히고 형식 검사를 받는다.' },
     B: { id: 'B', ko: '연속 말하기', sec: 15, prep: 3, speak: true,
-         desc: '3·2·1 뒤 15초 녹음. 같은 골격에 다른 상황 5연속. 핵심 드릴.' },
+         desc: '3·2·1 뒤 녹음. 답변 골격 전체를 문장마다 상황 3개씩 순회한다. 핵심 드릴.' },
     C: { id: 'C', ko: '블록 조립', sec: 20, speak: false,
          desc: '타이핑. 블록을 이어 완성 답안을 만든다.' },
     D: { id: 'D', ko: '실전 타이밍', sec: 0, prep: 3, speak: true,
@@ -114,8 +114,19 @@ const Drill = {
       }));
     }
     if (mode === 'B') {
-      const s = ds.find(x => x.id === sentenceId) || ds[0];
-      return s.drills.map(d => ({ sentence: s, situation: d.situation, refs: d.refs }));
+      // 문장을 지정했으면 그 문장만 깊게 (상황 5개 전부)
+      if (sentenceId) {
+        const s = ds.find(x => x.id === sentenceId);
+        if (s) return s.drills.map(d => ({ sentence: s, situation: d.situation, refs: d.refs }));
+      }
+      // 지정이 없으면 답변 골격 전체를 순회한다.
+      // 문장별로 묶어서 돌려야 "같은 골격에 다른 상황" 효과가 유지된다.
+      // 한 문장당 3상황이면 골격이 손에 붙으면서 세션도 길어지지 않는다.
+      const per = 3;
+      const out = [];
+      ds.forEach(s => s.drills.slice(0, per).forEach(d =>
+        out.push({ sentence: s, situation: d.situation, refs: d.refs })));
+      return out;
     }
     if (mode === 'C') {
       // 블록 순서대로 각 1개 — 이어 붙이면 완성 답안
