@@ -56,10 +56,11 @@ const Speech = {
         || Speech.voices[0] || null;
   },
 
-  /* 말하기. 끝나면 resolve. TTS 꺼져 있거나 미지원이면 즉시 resolve */
-  say(text, rate = 0.95) {
+  /* 말하기. 끝나면 resolve. TTS 꺼져 있거나 미지원이면 즉시 resolve.
+     force=true 면 설정과 무관하게 말한다 (사용자가 직접 누른 듣기 버튼용). */
+  say(text, rate = 0.95, force = false) {
     return new Promise(resolve => {
-      if (!Settings.get().tts || !('speechSynthesis' in window)) return resolve();
+      if ((!force && !Settings.get().tts) || !('speechSynthesis' in window)) return resolve();
       try {
         speechSynthesis.cancel();
         const u = new SpeechSynthesisUtterance(text);
@@ -78,7 +79,23 @@ const Speech = {
     });
   },
 
-  stop() { try { speechSynthesis.cancel(); } catch {} }
+  stop() { try { speechSynthesis.cancel(); } catch {} },
+
+  /* 단어 하나를 또박또박. 발음 확인용이라 느리게 읽는다. */
+  word(w) { return Speech.say(String(w).replace(/[^A-Za-z'\-\s]/g, ''), 0.6, true); },
+
+  /* 모범 낭독·모범 답안 듣기.
+     연습 표시(/ ↘ ↗)를 지우고, 강세 표기 대문자는 TTS 가 무시하므로 그대로 둔다. */
+  passage(text, rate = 0.85) {
+    const clean = String(text)
+      .replace(/[↘↗]/g, '')
+      .replace(/\s*\/\s*/g, ', ')       // 의미 단위 끊기를 짧은 쉼으로
+      .replace(/([,.!?;:])\s*,/g, '$1') // 원문 구두점과 겹친 쉼표 정리
+      .replace(/\s+([,.!?;:])/g, '$1')
+      .replace(/\s+/g, ' ')
+      .trim();
+    return Speech.say(clean, rate, true);
+  }
 };
 
 /* --- 녹음기 ------------------------------------------------- */

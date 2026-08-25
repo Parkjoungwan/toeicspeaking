@@ -1252,31 +1252,6 @@ const PART5 = [
 ];
 
 /* ============================================================
-   레거시 — 구 Part 5 Propose a Solution
-   2021년 8월 7일 삭제. 현행 시험 미출제. 참고용.
-   ============================================================ */
-const LEGACY = [
-  {
-    id: 'lg-01',
-    q: `회의실 이중 예약 문제 — 음성 메시지에 답하듯 해결책을 제안하세요. (구 형식: 준비 30초 / 답변 60초)`,
-    model: `Hi, this is Alex returning your call. I understand that two teams have reserved the same meeting room tomorrow afternoon. I suggest moving the smaller team to the training room on the second floor. It has enough seats and the same presentation equipment. We should also contact both teams today and explain the situation. To prevent this from happening again, we could use one shared online reservation system. I hope this solves the problem. Please let me know if you need anything else.`,
-    outline: ['인사·회신 (5초)', '문제 재진술 (10초)', '해결책 (20초)', '실행 조치 (15초)', '재발 방지 + 마무리 (10초)'],
-    tips: [
-      '**현행 시험에는 나오지 않는다.** 시험 대비 시간을 여기 쓰지 마라.',
-      '연습 가치는 있다 — 문제 → 해결 → 실행 → 예방 구조는 Q11 논리 전개와 겹친다.',
-      '문제 요약을 길게 하면 해결책이 늦어진다. 10초 안에 끝내라.'
-    ]
-  },
-  {
-    id: 'lg-02',
-    q: `고객 주문 상품 일부 품절 — 해결책을 제안하세요. (구 형식)`,
-    model: `I understand that several items in the customer's order are currently out of stock. I think we should contact the customer immediately and offer two options. We could replace the items with similar products at the same price, or we could ship the available items now and send the rest later at no additional charge. Offering a small discount would also help maintain customer satisfaction. I'll follow up once the customer decides.`,
-    outline: ['문제 확인 (10초)', '즉시 조치 (10초)', '선택지 2개 (25초)', '추가 배려 (10초)', '마무리 (5초)'],
-    tips: ['**현행 미출제.** 참고용.', '선택지를 2개 제시하는 구조가 이 유형의 핵심이었다.', '고객 관점 배려 문장이 고득점 요소였다.']
-  }
-];
-
-/* ============================================================
    출처 메타데이터
    이 앱의 모든 문항·지문·사진·음원은 자체 제작이다.
    ETS / 한국TOEIC위원회의 공식 문항·사진·음원은 복제해 넣지 않는다.
@@ -1383,9 +1358,6 @@ const PARTS = {
   5: { no: 5, name: 'Express an Opinion', ko: '의견 제시', qs: 'Q11', prep: 45, resp: 60,
        criteria: ['발음', '억양·강세', '문법', '어휘', '일관성', '내용 관련성', '내용 완결성'], max: 5,
        directions: `In this part of the test, you will give your opinion about a specific topic. Be sure to say as much as you can in the time allowed. You will have 45 seconds to prepare. Then you will have 60 seconds to speak.` },
-  L: { no: 'L', name: 'Propose a Solution (구형)', ko: '해결책 제안 · 현행 미출제', qs: '—', prep: 30, resp: 60,
-       criteria: ['문제 인식', '해결책', '언어 전달력'], max: 5,
-       directions: `[구 형식 · 2021년 8월 삭제] In this part of the test, you will be presented with a problem and asked to propose a solution.` }
 };
 
 /* 자가 채점표 — 학습자료 11장 기반, 파트별로 다르게 */
@@ -1399,8 +1371,7 @@ const SELF_CHECK = {
   4: ['자료의 정보를 정확히 말했다', 'A.M./P.M.과 숫자를 틀리지 않았다', '(정정 문항) No로 시작해 바로잡았다',
       '(Q10) 해당 항목을 빠짐없이 말했다', '순서어로 항목을 연결했다', '제한 시간을 거의 다 채웠다'],
   5: ['첫 문장에서 입장을 확정했다', '이유를 2개 제시했다', '구체적인 예시를 넣었다',
-      '입장이 끝까지 흔들리지 않았다', '결론 문장으로 마무리했다', '60초를 거의 다 채웠다'],
-  L: ['문제를 정확히 재진술했다', '해결책을 제시했다', '실행 조치를 말했다', '60초를 거의 다 채웠다']
+      '입장이 끝까지 흔들리지 않았다', '결론 문장으로 마무리했다', '60초를 거의 다 채웠다']
 };
 
-const BANK = { 1: PART1, 2: PART2, 3: PART3, 4: PART4, 5: PART5, L: LEGACY };
+const BANK = { 1: PART1, 2: PART2, 3: PART3, 4: PART4, 5: PART5 };

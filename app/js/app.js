@@ -57,8 +57,12 @@ const App = {
         : '<b>이 창에서만 유지된다.</b> 브라우저가 저장소를 전부 막았다. ' +
           '<code>start.command</code> 를 더블클릭해 열어라.';
     } else if (isFile) {
-      msg = 'file:// 로 열려 있다. 녹음 권한을 매번 다시 물을 수 있다. ' +
-            '거슬리면 <code>start.command</code> 를 더블클릭해라.';
+      msg = Store.restored
+        ? `<b>지난 기록 ${Store.restored}건을 복원했다.</b> 브라우저를 완전히 종료하면 ` +
+          `<code>file://</code> 에서는 <b>녹음 오디오가 사라진다</b>(점수·메모·드릴 기록은 남는다). ` +
+          `오디오까지 보관하려면 <code>start.command</code> 를 더블클릭해라.`
+        : '<code>file://</code> 로 열려 있다. 브라우저를 <b>완전히 종료하면 녹음 오디오가 사라진다.</b> ' +
+          '점수·메모·드릴 기록은 남는다. 오디오까지 보관하려면 <code>start.command</code> 를 더블클릭해라.';
     }
     b.innerHTML = `<span>${msg}</span><button aria-label="닫기">✕</button>`;
     b.querySelector('button').onclick = () => b.remove();
@@ -148,15 +152,6 @@ const Views = {
     });
     w.appendChild(g);
 
-    const lg = el('button', { class: 'part-card', style: 'margin-top:12px;opacity:.72' });
-    lg.innerHTML = `
-      <div class="no" style="color:var(--text-3)">레거시 · 현행 미출제</div>
-      <div class="ttl">해결책 제안 <span class="pill warn" style="vertical-align:middle">2021.08 삭제</span></div>
-      <div class="en">Propose a Solution — 구 Part 5</div>
-      <div class="meta"><span class="pill">준비 30초</span><span class="pill">답변 60초</span><span class="pill">${LEGACY.length}문항</span></div>`;
-    lg.onclick = () => App.go('#/part/L');
-    w.appendChild(lg);
-
     const recent = (App.allAttempts || []).slice(0, 5);
     if (recent.length) {
       w.appendChild(el('h2', {}, '최근 녹음'));
@@ -190,12 +185,6 @@ const Views = {
     const crit = el('div', { class: 'row', style: 'margin-bottom:18px' });
     P.criteria.forEach(c => crit.appendChild(el('span', { class: 'pill accent' }, esc(c))));
     w.appendChild(crit);
-
-    if (p === 'L') {
-      const n = el('div', { class: 'note warn', style: 'margin-bottom:18px' });
-      n.innerHTML = '<b>현행 시험에 출제되지 않는다.</b> 2021년 8월 7일 개정에서 삭제됐다. 시험 대비 시간을 여기에 쓰지 마라. 논리 전개 연습용으로만.';
-      w.appendChild(n);
-    }
 
     const all = el('div', { class: 'row', style: 'margin-bottom:14px' });
     const bAll = el('button', { class: 'btn primary' }, `Part ${P.no} 전체 순회`);
@@ -301,6 +290,22 @@ const Views = {
     md.innerHTML = partKey === '1' ? markReading(modelText) : esc(modelText);
     w.appendChild(md);
 
+    const listen = el('div', { class: 'row', style: 'margin-top:10px' });
+    const lb = el('button', { class: 'btn' }, partKey === '1' ? '▸ 모범 낭독 듣기' : '▸ 모범 답안 듣기');
+    lb.onclick = () => {
+      if (lb.dataset.on) { Speech.stop(); lb.removeAttribute('data-on');
+        lb.textContent = partKey === '1' ? '▸ 모범 낭독 듣기' : '▸ 모범 답안 듣기'; return; }
+      lb.dataset.on = '1'; lb.textContent = '■ 멈추기';
+      Speech.passage(modelText).then(() => {
+        lb.removeAttribute('data-on');
+        lb.textContent = partKey === '1' ? '▸ 모범 낭독 듣기' : '▸ 모범 답안 듣기';
+      });
+    };
+    const sl = el('button', { class: 'btn ghost' }, '느리게');
+    sl.onclick = () => Speech.passage(modelText, 0.62);
+    listen.append(lb, sl);
+    w.appendChild(listen);
+
     if (partKey === '1') {
       const lg = el('div', { class: 'row', style: 'margin-top:8px;font-size:12.5px;color:var(--text-3)' });
       lg.innerHTML = `<span><b class="slash" style="color:var(--accent)">/</b> 의미 단위 끊기</span>
@@ -325,8 +330,15 @@ const Views = {
     if (q.focus) {
       w.appendChild(el('h3', {}, '발음 점검 단어'));
       const fw = el('div', { class: 'focus-words' });
-      q.focus.forEach(f => fw.appendChild(el('span', {}, esc(f))));
+      q.focus.forEach(f => {
+        const b = el('button', { class: 'fw', title: '눌러서 발음 듣기' });
+        b.innerHTML = `<span class="w">${esc(f)}</span><span class="sp">▸</span>`;
+        b.onclick = () => { speakBtn(b); Speech.word(f); };
+        fw.appendChild(b);
+      });
       w.appendChild(fw);
+      w.appendChild(el('div', { style: 'font-size:12.5px;color:var(--text-3);margin-top:6px' },
+        '단어를 누르면 천천히 읽어 준다. 내 녹음과 번갈아 들어라.'));
     }
 
     /* 4) 팁 */
@@ -688,9 +700,11 @@ const Views = {
             <span class="slot-meta"><b>${esc(sl.label)}</b>${sl.hint ? ' · ' + esc(sl.hint) : ''}<br>
             <span class="slot-eg">${(sl.eg || []).map(e => esc(e)).join(' / ')}</span></span></div>`;
         }).join('')}</div>` : ''}
-        ${s.drills && s.drills.length ? `<div class="sent-act"><button class="btn" data-sid="${s.id}">이 문장만 5연속 드릴</button></div>` : ''}`;
+        ${s.drills && s.drills.length ? `<div class="sent-act"><button class="btn" data-sid="${s.id}">이 문장만 5연속 드릴</button><button class="btn ghost" data-say="1">▸ 예시 듣기</button></div>` : ''}`;
       const b = c.querySelector('button[data-sid]');
       if (b) b.onclick = () => App.go(`#/drill/${p}/${tid}/B/${s.id}`);
+      const sb = c.querySelector('button[data-say]');
+      if (sb) sb.onclick = () => Speech.passage(s.drills[0].refs[0], 0.8);
       w.appendChild(c);
     });
 
@@ -1315,7 +1329,10 @@ const DrillUI = {
   appendRefs(st, item) {
     const box = el('div', { class: 'dr-refs' });
     box.innerHTML = `<div class="lab">이 상황의 모범 예시</div>` +
-      (item.refs || []).map(r => `<div class="ref">${esc(r)}</div>`).join('');
+      (item.refs || []).map(r => `<div class="ref say" role="button" tabindex="0">${esc(r)}</div>`).join('');
+    box.querySelectorAll('.ref.say').forEach(d => {
+      d.onclick = () => Speech.passage(d.textContent, 0.8);
+    });
     st.appendChild(box);
 
     /* 같은 골격에 다른 내용이 들어간 예시 — 정답이 하나가 아님을 보여준다 */
@@ -1419,7 +1436,7 @@ const DrillUI = {
    ============================================================ */
 function findQuestion(questionId) {
   const [base, sub] = String(questionId).split('#');
-  for (const k of ['1', '2', '3', '4', '5', 'L']) {
+  for (const k of ['1', '2', '3', '4', '5']) {
     const q = BANK[k].find(x => x.id === base);
     if (q) {
       const item = sub && q.items ? q.items[Number(sub) - 1] : null;
@@ -1435,6 +1452,12 @@ function markReading(text) {
     .replace(/\//g, '<span class="slash">/</span>')
     .replace(/([↘↗])/g, '<span class="arrow">$1</span>')
     .replace(/\b([A-Z][A-Z'’\-]{1,}(?:\s+[A-Z][A-Z'’\-]+)*)\b/g, m => `<span class="stress">${m}</span>`);
+}
+
+/* 듣기 버튼 누른 순간 잠깐 강조 */
+function speakBtn(b) {
+  b.classList.add('playing');
+  setTimeout(() => b.classList.remove('playing'), 700);
 }
 
 /* 템플릿 문자열의 {SLOT} 을 빈칸 칩으로 렌더 */

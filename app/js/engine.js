@@ -4,7 +4,7 @@
 
 /* --- 실행 목록 만들기 --------------------------------------- */
 const Runlist = {
-  /* 단일 문항 (Part 1·2·5·레거시) 또는 세트 (Part 3·4) */
+  /* 단일 문항 (Part 1·2·5) 또는 세트 (Part 3·4) */
   one(part, q, opts = {}) {
     const P = PARTS[part];
     const p = Number(part);   // 호출부가 '3' 처럼 문자열 키를 넘길 수 있다

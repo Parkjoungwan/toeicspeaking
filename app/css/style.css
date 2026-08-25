@@ -532,3 +532,18 @@ body.drill-mode { overflow: hidden; }
   font-size: 15px; line-height: 1; padding: 2px 4px; opacity: .6;
 }
 .capbar button:hover { opacity: 1; }
+
+/* 발음 듣기 */
+button.fw {
+  display: inline-flex; align-items: center; gap: 7px;
+  font-family: var(--mono); font-size: 13px;
+  padding: 6px 11px; background: var(--warn-soft); color: var(--warn);
+  border: 1px solid transparent; border-radius: 7px; cursor: pointer;
+  transition: border-color .12s, transform .1s;
+}
+button.fw:hover { border-color: var(--warn); }
+button.fw:active, button.fw.playing { transform: scale(.96); border-color: var(--warn); }
+button.fw .sp { opacity: .55; font-size: 11px; }
+button.fw:hover .sp { opacity: 1; }
+.dr-refs .ref.say { cursor: pointer; }
+.dr-refs .ref.say:hover { color: var(--ok); }
