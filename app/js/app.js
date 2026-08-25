@@ -94,7 +94,7 @@ const App = {
     if (v === 'done') return Views.done();
     if (v === 'patterns') return a ? (b ? Views.typeDetail(a, b) : Views.partTypes(a)) : Views.patterns();
     if (v === 'drilldone') return DrillUI.result();
-    if (v === 'drill') return DrillUI.open(a + '/' + b, (h.split('/')[3] || 'A'), h.split('/')[4]);
+    if (v === 'drill') return DrillUI.open(a + '/' + b, (h.split('/')[3] || 'B'), h.split('/')[4]);
     if (v === 'official') return Views.official();
     if (v === 'history') return Views.history();
     if (v === 'settings') return Views.settings();
