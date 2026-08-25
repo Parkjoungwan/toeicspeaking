@@ -768,7 +768,10 @@ const Views = {
       c.innerHTML = `<div class="no">모드 ${M.id}</div>
         <div class="ttl">${esc(M.ko)}</div>
         <div style="font-size:13px;color:var(--text-2);margin-top:6px;line-height:1.6">${esc(M.desc)}</div>
-        <div class="meta"><span class="pill">${M.sec}초/문항</span>${m === 'D' ? '<span class="pill rec">녹음</span>' : '<span class="pill">타이핑</span>'}</div>`;
+        <div class="meta">
+          <span class="pill">${m === 'D' ? (type.sec + '초') : (M.sec + '초')}/문항</span>
+          ${M.speak ? `<span class="pill rec">3·2·1 → 녹음</span>` : '<span class="pill">타이핑</span>'}
+        </div>`;
       c.onclick = () => App.go(`#/drill/${p}/${tid}/${m}`);
       modes.appendChild(c);
     });
@@ -1153,7 +1156,7 @@ const Exam = {
    드릴 실행 화면
    ============================================================ */
 const DrillUI = {
-  node: null, timer: null, endAt: 0, mode: 'A', typePath: '',
+  node: null, timer: null, _step: null, endAt: 0, mode: 'A', typePath: '',
 
   open(typePath, mode, sentenceId) {
     const t = getType(typePath);
@@ -1174,6 +1177,18 @@ const DrillUI = {
 
     DrillUI.mode = mode; DrillUI.typePath = typePath;
     DrillUI.mount();
+
+    const M = Drill.MODES[mode];
+    if (M && M.speak) {
+      // 연속 드릴이라 문항마다 권한을 묻지 않도록 한 번에 확보한다
+      $('#dr-stage', DrillUI.node).innerHTML =
+        '<div class="dr-arm">마이크를 준비하는 중…</div>';
+      Recorder.arm().then(() => DrillUI.render()).catch(e => {
+        $('#dr-stage', DrillUI.node).innerHTML =
+          `<div class="dr-arm err">마이크를 열 수 없다.<br><span>${esc(e.message || e)}</span></div>`;
+      });
+      return;
+    }
     DrillUI.render();
   },
 
@@ -1199,6 +1214,7 @@ const DrillUI = {
 
   unmount() {
     clearInterval(DrillUI.timer); DrillUI.timer = null;
+    clearInterval(DrillUI._step); DrillUI._step = null;
     Recorder.stopLevel();
     if (DrillUI.node) { DrillUI.node.remove(); DrillUI.node = null; }
     document.body.classList.remove('drill-mode');
@@ -1245,7 +1261,7 @@ const DrillUI = {
     sit.innerHTML = `<span class="lab">상황</span><span class="val">${esc(item.situation)}</span>`;
     st.appendChild(sit);
 
-    if (DrillUI.mode === 'D') return DrillUI.renderSpeak(st, item);
+    if (Drill.MODES[DrillUI.mode].speak) return DrillUI.renderSpeak(st, item);
 
     // 입력
     const ta = el('textarea', { class: 'dr-input', placeholder: '영어로 문장을 완성해라', rows: '2' });
@@ -1276,69 +1292,107 @@ const DrillUI = {
   },
 
   renderSpeak(st, item) {
-    const M = Drill.MODES.D;
-    const hint = el('div', { class: 'note', style: 'margin-top:14px' },
-      '골격을 보고 <b>소리 내어 말해라.</b> 타이핑 없이 바로 발화한다.');
-    st.appendChild(hint);
+    const mode = DrillUI.mode;
+    const T = Drill.state.typeData;
+    const sec = Drill.secFor(mode, T.type);
+    const prep = Drill.MODES[mode].prep || 3;
 
-    const lvl = el('div', { class: 'level', style: 'margin-top:16px' });
-    lvl.innerHTML = '<i></i>'.repeat(28);
-    st.appendChild(lvl);
+    const stage = el('div', { class: 'dr-speak' });
+    stage.innerHTML = `
+      <div class="dr-phase" id="dr-ph">준비</div>
+      <div class="dr-big" id="dr-big">${prep}</div>
+      <div class="dr-sub" id="dr-sub">골격을 떠올려라</div>
+      <div class="level" id="dr-lvl" style="visibility:hidden">${'<i></i>'.repeat(28)}</div>`;
+    st.appendChild(stage);
 
-    const act = el('div', { class: 'row', style: 'margin-top:14px' });
-    const rec = el('button', { class: 'btn primary' }, '녹음 시작');
+    const act = el('div', { class: 'row', style: 'margin-top:16px' });
     const skip = el('button', { class: 'btn ghost' }, '건너뛰기');
-    act.append(rec, skip);
+    skip.onclick = () => { DrillUI.abortStep(); DrillUI.advance(); };
+    act.appendChild(skip);
     st.appendChild(act);
 
-    skip.onclick = () => DrillUI.advance();
+    const big = stage.querySelector('#dr-big');
+    const ph = stage.querySelector('#dr-ph');
+    const sub = stage.querySelector('#dr-sub');
+    const lvl = stage.querySelector('#dr-lvl');
 
-    rec.onclick = async () => {
-      rec.disabled = true; rec.textContent = '녹음 중…';
-      try {
-        await Recorder.arm();
-        Recorder.start();
-        const bars = [...lvl.children];
-        Recorder.onLevel(v => {
-          const lit = Math.round(v * bars.length);
-          bars.forEach((b, i) => {
-            b.classList.toggle('on', i < lit);
-            b.style.height = (28 + (i < lit ? 72 : 0) * (i / bars.length)) + '%';
-          });
+    /* --- 3·2·1 카운트다운 --- */
+    let n = prep;
+    Audio_.beep('prep');
+    big.textContent = n;
+    DrillUI._step = setInterval(() => {
+      n--;
+      if (n > 0) { big.textContent = n; Audio_.beep('prep'); return; }
+      clearInterval(DrillUI._step); DrillUI._step = null;
+      startRec();
+    }, 1000);
+
+    /* --- 녹음 --- */
+    function startRec() {
+      ph.textContent = '말하기';
+      ph.classList.add('rec');
+      sub.textContent = '지금 말해라';
+      lvl.style.visibility = 'visible';
+      Audio_.beep('go');
+      try { Recorder.start(); } catch (e) {
+        sub.textContent = '녹음 실패: ' + (e.message || e);
+        return;
+      }
+      const bars = [...lvl.children];
+      Recorder.onLevel(v => {
+        const lit = Math.round(v * bars.length);
+        bars.forEach((b, i) => {
+          b.classList.toggle('on', i < lit);
+          b.style.height = (28 + (i < lit ? 72 : 0) * (i / bars.length)) + '%';
         });
-        DrillUI.startClock(M.sec, async () => {
+      });
+      const t0 = performance.now();
+      big.textContent = sec.toFixed ? sec : sec;
+      DrillUI._step = setInterval(async () => {
+        const left = Math.max(0, sec - (performance.now() - t0) / 1000);
+        big.textContent = Math.ceil(left);
+        big.classList.toggle('low', left <= 3);
+        if (left <= 0) {
+          clearInterval(DrillUI._step); DrillUI._step = null;
           Recorder.stopLevel();
+          Audio_.beep('end');
           const out = await Recorder.stop();
-          Recorder.disarm();
           let attemptId = null;
           if (out && out.blob && out.blob.size) {
             attemptId = await Store.save({
-              questionId: 'drill:' + DrillUI.typePath, part: Drill.state.typeData.part,
-              startedAt: Date.now(), limitSec: M.sec,
-              durationSec: Math.min(out.durationSec, M.sec),
+              questionId: 'drill:' + DrillUI.typePath, part: T.part,
+              startedAt: Date.now(), limitSec: sec,
+              durationSec: Math.min(out.durationSec, sec),
               mime: out.mime, audio: out.blob, mode: 'drill', selfCheck: {}, memo: ''
             }).catch(() => null);
           }
-          Drill.submitAudio(attemptId, M.sec);
+          Drill.submitAudio(attemptId, sec);
           DrillUI.showSpokenResult(st, item, attemptId);
-        });
-      } catch (e) {
-        rec.disabled = false; rec.textContent = '녹음 시작';
-        alert('마이크를 열 수 없다: ' + e.message);
-      }
-    };
+        }
+      }, 100);
+    }
+  },
+
+  /* 카운트다운·녹음을 즉시 중단 */
+  abortStep() {
+    clearInterval(DrillUI._step); DrillUI._step = null;
+    Recorder.stopLevel();
+    if (Recorder.rec && Recorder.rec.state !== 'inactive') { try { Recorder.rec.stop(); } catch (e) {} }
   },
 
   showSpokenResult(st, item, attemptId) {
     st.innerHTML = '';
     st.appendChild(el('div', { class: 'dr-verdict ok' }, '녹음 완료'));
-    st.appendChild(el('div', { class: 'dr-sit' }, `<span class="lab">상황</span><span class="val">${esc(item.situation)}</span>`));
+    st.appendChild(el('div', { class: 'dr-tpl' }, tplHTML(item.sentence.tpl)));
+    st.appendChild(el('div', { class: 'dr-sit' },
+      `<span class="lab">상황</span><span class="val">${esc(item.situation)}</span>`));
+
     if (attemptId) {
       Store.get(attemptId).then(a => {
-        if (!a) return;
+        if (!a || !a.audio) return;
         const au = el('audio', { controls: '' });
         au.src = URL.createObjectURL(a.audio);
-        st.insertBefore(au, st.children[2] || null);
+        st.insertBefore(au, st.children[3] || null);
       });
     }
     DrillUI.appendRefs(st, item);
@@ -1414,6 +1468,7 @@ const DrillUI = {
 
   async finish(aborted) {
     clearInterval(DrillUI.timer); DrillUI.timer = null;
+    DrillUI.abortStep();
     Recorder.stopLevel(); Recorder.disarm();
     const sum = Drill.summary();
     if (sum && sum.answered) await Drill.save();
@@ -1449,12 +1504,18 @@ const DrillUI = {
     w.appendChild(el('p', { class: 'lede' },
       `Part ${typePath.split('/')[0]} · ${name} — 모드 ${mode} ${Drill.MODES[mode].ko}`));
 
+    const spoken = Drill.MODES[mode] && Drill.MODES[mode].speak;
     const pct = Math.round(sum.rate * 100);
     const card = el('div', { class: 'card', style: 'margin-bottom:16px' });
-    card.innerHTML = `<div class="usage">
-      <span class="num">${sum.passed}<span style="font-size:13px;color:var(--text-3)">/${sum.answered}</span></span>
-      <span class="track"><i style="width:${pct}%;background:${pct >= 80 ? 'var(--ok)' : 'var(--warn)'}"></i></span>
-      <span class="cap">형식 통과율 ${pct}%</span></div>`;
+    card.innerHTML = spoken
+      ? `<div class="usage">
+          <span class="num">${sum.answered}<span style="font-size:13px;color:var(--text-3)">/${sum.total}</span></span>
+          <span class="track"><i style="width:${Math.round(sum.answered / sum.total * 100)}%;background:var(--ok)"></i></span>
+          <span class="cap">말하기 완료 · 아래에서 다시 듣고 모범 예시와 대조해라</span></div>`
+      : `<div class="usage">
+          <span class="num">${sum.passed}<span style="font-size:13px;color:var(--text-3)">/${sum.answered}</span></span>
+          <span class="track"><i style="width:${pct}%;background:${pct >= 80 ? 'var(--ok)' : 'var(--warn)'}"></i></span>
+          <span class="cap">형식 통과율 ${pct}%</span></div>`;
     w.appendChild(card);
 
     sum.results.forEach((r, i) => {

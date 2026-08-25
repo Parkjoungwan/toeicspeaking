@@ -561,3 +561,31 @@ button.fw:hover .sp { opacity: 1; }
 }
 .returnbar button:hover { filter: brightness(1.08); }
 a.btn { text-decoration: none; display: inline-block; }
+
+/* 말하기 드릴 — 3·2·1 카운트다운 */
+.dr-speak { text-align: center; margin-top: 26px; }
+.dr-phase {
+  font-size: 12px; font-weight: 700; letter-spacing: .16em; text-transform: uppercase;
+  color: var(--text-3);
+}
+.dr-phase.rec { color: var(--rec); }
+.dr-big {
+  font-family: var(--mono); font-size: clamp(64px, 16vw, 120px); font-weight: 600;
+  line-height: 1.1; font-variant-numeric: tabular-nums; letter-spacing: -.03em;
+  margin: 6px 0 2px;
+}
+.dr-phase.rec + .dr-big { color: var(--rec); }
+.dr-big.low { color: var(--rec); }
+.dr-sub { font-size: 14px; color: var(--text-2); margin-bottom: 18px; }
+.dr-speak .level { max-width: 420px; margin: 0 auto; }
+.dr-arm { text-align: center; padding: 60px 20px; color: var(--text-2); font-size: 15px; }
+.dr-arm.err { color: var(--rec); }
+.dr-arm span { font-size: 13px; color: var(--text-3); }
+
+/* 하단 고지 */
+footer.legal {
+  max-width: 980px; margin: 0 auto; padding: 22px 20px 40px;
+  font-size: 12px; line-height: 1.7; color: var(--text-3);
+  border-top: 1px solid var(--line-soft);
+}
+body.exam-mode footer.legal, body.drill-mode footer.legal { display: none; }
