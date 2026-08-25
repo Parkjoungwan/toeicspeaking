@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>TOEIC Speaking 실전 트레이너</title>
+<meta name="description" content="시험과 동일한 타이밍으로 녹음하고, 다시 듣고, 모범답안과 대조하는 로컬 연습 도구">
+<link rel="stylesheet" href="css/style.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎙️</text></svg>">
+</head>
+<body>
+
+<header class="top">
+  <div class="inner">
+    <div class="brand">TOEIC Speaking <span>실전 트레이너</span></div>
+    <nav class="tabs" id="tabs">
+      <button data-v="home">연습</button>
+      <button data-v="patterns">문장 세트</button>
+      <button data-v="official">공식 자료</button>
+      <button data-v="history">기록</button>
+      <button data-v="settings">설정</button>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap" id="main"></main>
+
+<noscript><div class="wrap"><p>JavaScript가 필요하다.</p></div></noscript>
+
+<script src="js/questions.js"></script>
+<script src="js/patterns.js"></script>
+<script src="js/store.js"></script>
+<script src="js/recorder.js"></script>
+<script src="js/engine.js"></script>
+<script src="js/drill.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>

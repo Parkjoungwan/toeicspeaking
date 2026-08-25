@@ -1,0 +1,14 @@
+# OS
+.DS_Store
+Thumbs.db
+
+# 에디터
+.vscode/
+.idea/
+*.swp
+
+# 의존성 (현재 없음, 향후 대비)
+node_modules/
+
+# 로컬 산출물
+*.log
