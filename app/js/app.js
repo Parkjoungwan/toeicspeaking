@@ -1317,14 +1317,14 @@ const DrillUI = {
   renderSpeak(st, item) {
     const mode = DrillUI.mode;
     const T = Drill.state.typeData;
-    const sec = Drill.secFor(mode, T.type);
+    const sec = Drill.secFor(mode, T.type, item);
     const prep = Drill.MODES[mode].prep || 3;
 
     const stage = el('div', { class: 'dr-speak' });
     stage.innerHTML = `
       <div class="dr-phase" id="dr-ph">준비</div>
       <div class="dr-big" id="dr-big">${prep}</div>
-      <div class="dr-sub" id="dr-sub">골격을 떠올려라</div>
+      <div class="dr-sub" id="dr-sub">골격을 떠올려라 · ${sec}초 동안 말한다</div>
       <div class="level" id="dr-lvl" style="visibility:hidden">${'<i></i>'.repeat(28)}</div>`;
     st.appendChild(stage);
 

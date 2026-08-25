@@ -80,10 +80,20 @@ const Drill = {
          desc: '유형의 실제 답변 시간으로 한 번에. 15·30·60초.' }
   },
 
-  /* 모드 D 는 유형의 실제 답변 시간을 쓴다 */
-  secFor(mode, type) {
+  /* 문장 하나를 말하는 데 실제로 필요한 시간.
+     모범 예시의 단어 수로 잡는다. 템플릿은 슬롯이 비어 있어 실제 길이와 다르다.
+     학습자 발화를 초당 2단어로 보고 생각할 여유 3초를 더한다. */
+  estimateSec(item) {
+    const ref = (item && item.refs && item.refs[0]) || (item && item.sentence && item.sentence.tpl) || '';
+    const words = String(ref).trim().split(/\s+/).filter(Boolean).length;
+    return Math.max(6, Math.min(20, Math.ceil(words / 2) + 3));
+  },
+
+  /* 모드 D 는 유형의 실제 답변 시간, 모드 B 는 문장 길이에 맞춘다 */
+  secFor(mode, type, item) {
     const M = Drill.MODES[mode];
     if (mode === 'D') return (type && type.sec) || 15;
+    if (mode === 'B' && item) return Drill.estimateSec(item);
     return M.sec;
   },
 
