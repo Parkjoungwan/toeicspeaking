@@ -14,18 +14,51 @@ let _db = null;
    이 세션 안에서는 녹음·재생·리포트가 정상 동작하고,
    새로고침하면 사라진다는 점만 사용자에게 알린다.
    ------------------------------------------------------------ */
+const LS_KEY = 'ts-fallback';
+
 const Mem = {
   attempts: [], drills: [], coverage: [], _id: 1,
-  add(store, rec) { rec.id = Mem._id++; Mem[store].push(rec); return rec.id; },
+
+  /* 오디오 Blob 은 직렬화할 수 없고 용량도 크다.
+     학습 기록(점수·메모·지표·드릴·커버리지)만 localStorage 에 남긴다.
+     → file:// 로 열어도 진도는 보존되고, 오디오만 그 세션 한정이 된다. */
+  persist() {
+    try {
+      const strip = a => { const { audio, ...rest } = a; return { ...rest, audioLost: true }; };
+      localStorage.setItem(LS_KEY, JSON.stringify({
+        v: 1, _id: Mem._id,
+        attempts: Mem.attempts.map(strip),
+        drills: Mem.drills,
+        coverage: Mem.coverage
+      }));
+      return true;
+    } catch (e) { return false; }   // 용량 초과·차단 시 조용히 포기
+  },
+
+  load() {
+    try {
+      const raw = localStorage.getItem(LS_KEY);
+      if (!raw) return false;
+      const d = JSON.parse(raw);
+      Mem.attempts = d.attempts || [];
+      Mem.drills = d.drills || [];
+      Mem.coverage = d.coverage || [];
+      Mem._id = d._id || (Mem.attempts.length + 1);
+      return true;
+    } catch (e) { return false; }
+  },
+
+  add(store, rec) { rec.id = Mem._id++; Mem[store].push(rec); Mem.persist(); return rec.id; },
   put(store, rec) {
     const i = Mem[store].findIndex(x => x.id === rec.id);
     if (i >= 0) Mem[store][i] = rec; else Mem.add(store, rec);
+    Mem.persist();
     return rec.id;
   },
   get(store, id) { return Mem[store].find(x => x.id === id) || undefined; },
   all(store) { return Mem[store].slice(); },
-  del(store, id) { Mem[store] = Mem[store].filter(x => x.id !== id); },
-  clear(store) { Mem[store] = []; }
+  del(store, id) { Mem[store] = Mem[store].filter(x => x.id !== id); Mem.persist(); },
+  clear(store) { Mem[store] = []; Mem.persist(); }
 };
 
 function openDB() {
@@ -91,10 +124,24 @@ const Store = {
   backend: 'idb',        // 'idb' | 'memory'
   reason: '',
 
+  restored: false,       // localStorage 에서 이전 기록을 되살렸는가
+  lsOK: false,           // localStorage 자체가 쓸 수 있는가
+
   /* 시작 시 1회 실행. 실제로 열어 보고 백엔드를 확정한다. */
   async probe() {
+    try {
+      const k = '__ts_probe__';
+      localStorage.setItem(k, '1'); localStorage.removeItem(k);
+      Store.lsOK = true;
+    } catch (e) { Store.lsOK = false; }
+
     try { await openDB(); Store.backend = 'idb'; }
-    catch (e) { Store.backend = 'memory'; Store.reason = (e && e.message) || String(e); }
+    catch (e) {
+      Store.backend = 'memory';
+      Store.reason = (e && e.message) || String(e);
+      // IndexedDB 가 막혔으면 지난 학습 기록을 localStorage 에서 되살린다
+      Store.restored = Mem.load();
+    }
     return Store.backend;
   },
 

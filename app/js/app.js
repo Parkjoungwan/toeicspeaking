@@ -49,8 +49,13 @@ const App = {
     if (noMic) {
       msg = '<b>이 브라우저에서 녹음을 쓸 수 없다.</b> Chrome·Edge·Safari 최신 버전에서 열어라.';
     } else if (noStore) {
-      msg = '<b>녹음이 이 창에서만 유지된다.</b> 브라우저가 이 방식(file://)에서 저장소를 막았다. ' +
-            '새로고침하면 녹음이 사라진다. 영구 보관하려면 <code>start.command</code> 를 더블클릭해 열어라.';
+      msg = Store.lsOK
+        ? '<b>학습 기록은 저장된다. 오디오만 이 창에서만 유지된다.</b> ' +
+          '점수·메모·드릴 통계·커버리지는 새로고침해도 남는다. ' +
+          '녹음 파일까지 보관하려면 <code>start.command</code> 를 더블클릭해라.' +
+          (Store.restored ? ' <b>이전 기록을 복원했다.</b>' : '')
+        : '<b>이 창에서만 유지된다.</b> 브라우저가 저장소를 전부 막았다. ' +
+          '<code>start.command</code> 를 더블클릭해 열어라.';
     } else if (isFile) {
       msg = 'file:// 로 열려 있다. 녹음 권한을 매번 다시 물을 수 있다. ' +
             '거슬리면 <code>start.command</code> 를 더블클릭해라.';
@@ -251,9 +256,17 @@ const Views = {
         <span class="track"><i style="width:${pct}%;background:${good ? 'var(--ok)' : 'var(--warn)'}"></i><b style="left:${target}%"></b></span>
         <span class="cap">제한 ${a.limitSec}초의 <b>${pct.toFixed(0)}%</b> 사용 ${good ? '· 충분' : '· 더 채워라'}</span>
       </div>`;
-    const au = el('audio', { controls: '' });
-    au.src = URL.createObjectURL(a.audio);
-    playCard.appendChild(au);
+    if (a.audio) {
+      const au = el('audio', { controls: '' });
+      au.src = URL.createObjectURL(a.audio);
+      playCard.appendChild(au);
+    } else {
+      const lost = el('div', { class: 'note', style: 'margin-top:10px' });
+      lost.innerHTML = '이 회차의 <b>오디오는 남아 있지 않다.</b> 지표·자가채점·메모는 그대로다. ' +
+        '(브라우저가 <code>file://</code> 에서 오디오 저장을 막았을 때 이렇게 된다 — ' +
+        '<code>start.command</code> 로 열면 오디오도 보관된다.)';
+      playCard.appendChild(lost);
+    }
     const again = el('div', { class: 'row', style: 'margin-top:12px' });
     const bRetry = el('button', { class: 'btn' }, '이 문항 다시 풀기');
     bRetry.onclick = () => {
