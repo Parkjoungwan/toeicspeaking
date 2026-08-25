@@ -36,9 +36,15 @@ const App = {
     App.route();
   },
 
+  /* 실행 스크립트 이름은 OS 마다 다르다 */
+  starterName() {
+    return /Win/i.test(navigator.platform || navigator.userAgent) ? 'start.bat' : 'start.command';
+  },
+
   /* 이 브라우저에서 실제로 뭐가 되는지 확인해 알린다.
      file:// 로 열었을 때 조용히 실패하는 걸 막는 게 목적. */
   showCapabilityBanner() {
+    const STARTER = App.starterName();
     const isFile = location.protocol === 'file:';
     const noStore = Store.backend === 'memory';
     const noMic = !Recorder.supported();
@@ -52,17 +58,17 @@ const App = {
       msg = Store.lsOK
         ? '<b>학습 기록은 저장된다. 오디오만 이 창에서만 유지된다.</b> ' +
           '점수·메모·드릴 통계·커버리지는 새로고침해도 남는다. ' +
-          '녹음 파일까지 보관하려면 <code>start.command</code> 를 더블클릭해라.' +
+          `녹음 파일까지 보관하려면 <code>${STARTER}</code> 를 더블클릭해라.` +
           (Store.restored ? ' <b>이전 기록을 복원했다.</b>' : '')
         : '<b>이 창에서만 유지된다.</b> 브라우저가 저장소를 전부 막았다. ' +
-          '<code>start.command</code> 를 더블클릭해 열어라.';
+          `<code>${STARTER}</code> 를 더블클릭해 열어라.`;
     } else if (isFile) {
       msg = Store.restored
         ? `<b>지난 기록 ${Store.restored}건을 복원했다.</b> 브라우저를 완전히 종료하면 ` +
           `<code>file://</code> 에서는 <b>녹음 오디오가 사라진다</b>(점수·메모·드릴 기록은 남는다). ` +
-          `오디오까지 보관하려면 <code>start.command</code> 를 더블클릭해라.`
+          `오디오까지 보관하려면 <code>${STARTER}</code> 를 더블클릭해라.`
         : '<code>file://</code> 로 열려 있다. 브라우저를 <b>완전히 종료하면 녹음 오디오가 사라진다.</b> ' +
-          '점수·메모·드릴 기록은 남는다. 오디오까지 보관하려면 <code>start.command</code> 를 더블클릭해라.';
+          `점수·메모·드릴 기록은 남는다. 오디오까지 보관하려면 <code>${STARTER}</code> 를 더블클릭해라.`;
     }
     b.innerHTML = `<span>${msg}</span><button aria-label="닫기">✕</button>`;
     b.querySelector('button').onclick = () => b.remove();
@@ -298,7 +304,7 @@ const Views = {
       const lost = el('div', { class: 'note', style: 'margin-top:10px' });
       lost.innerHTML = '이 회차의 <b>오디오는 남아 있지 않다.</b> 지표·자가채점·메모는 그대로다. ' +
         '(브라우저가 <code>file://</code> 에서 오디오 저장을 막았을 때 이렇게 된다 — ' +
-        '<code>start.command</code> 로 열면 오디오도 보관된다.)';
+        '<code>' + App.starterName() + '</code> 로 열면 오디오도 보관된다.)';
       playCard.appendChild(lost);
     }
     const again = el('div', { class: 'row', style: 'margin-top:12px' });

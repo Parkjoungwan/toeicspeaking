@@ -5,8 +5,11 @@ HTML / CSS / JavaScript만 사용한다. 빌드 없음, 의존성 없음, 서버
 
 ## 실행
 
-**가장 쉬운 방법** — `app/start.command` 를 더블클릭한다. 서버가 켜지고 브라우저가 열린다.
-창을 닫으면 서버도 종료된다.
+**Mac** — `app/start.command` 더블클릭
+**Windows** — `app/start.bat` 더블클릭
+
+서버가 켜지고 브라우저가 열린다. 창을 닫으면 서버도 종료된다.
+포트가 쓰이고 있으면 비어 있는 포트를 자동으로 찾는다.
 
 터미널을 쓴다면:
 
@@ -22,7 +25,7 @@ python3 -m http.server 8777 --directory app
 빈 DB 가 된다. 그래서 `file://` 로 열면 앱이 매 저장마다 학습 기록을 localStorage 에 복사해 두고,
 다음에 열 때 되살린다.
 
-| | index.html 더블클릭 | start.command |
+| | index.html 더블클릭 | start.command / start.bat |
 |---|---|---|
 | 화면·문장 세트·드릴·TTS | 정상 | 정상 |
 | 녹음·바로 재생 | 정상 | 정상 |
@@ -31,7 +34,9 @@ python3 -m http.server 8777 --directory app
 | 마이크 권한 | 매번 다시 물을 수 있음 | 한 번만 |
 
 오디오는 한 회에 수백 KB 라 localStorage(약 5MB)에 담을 수 없다. 그래서 오디오만 못 살린다.
-**지난 녹음을 다시 들을 생각이면 `start.command` 를 써라.**
+**지난 녹음을 다시 들을 생각이면 실행 스크립트를 써라.**
+
+Python 이 없으면 스크립트가 알아서 `index.html` 을 열고 안내한다.
 
 ## 기능
 

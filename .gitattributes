@@ -1,0 +1,5 @@
+# Windows 배치 파일은 CRLF 여야 goto/label 이 정상 동작한다
+*.bat text eol=crlf
+# 유닉스 셸 스크립트는 LF 유지
+*.command text eol=lf
+*.sh      text eol=lf
