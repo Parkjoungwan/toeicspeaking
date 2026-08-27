@@ -245,7 +245,19 @@ const PATTERNS = {
             ko: '가장 큰 이유는 {CLAUSE}입니다.',
             use: 'because 를 이미 썼을 때 쓰는 다른 골격.',
             slots: { CLAUSE: { label: '주어+동사 절', hint: '', eg: ['it saves me a lot of time'] } },
-            check: [{ type: 'contains', value: 'that' }]
+            check: [{ type: 'contains', value: 'that' }],
+            drills: [
+              { situation: '정기권을 쓰면 매달 교통비를 줄일 수 있다', refs: ['The main reason is that a monthly pass keeps my transportation costs low.'] },
+              { situation: '앱 하나에서 필요한 최신 정보를 확인할 수 있다', refs: ['The main reason is that the app puts all the updates I need in one place.'] },
+              { situation: '퇴근 후 산책을 하면 머리를 식힐 수 있다', refs: ['The main reason is that an evening walk helps me clear my mind after work.'] },
+              { situation: '영상 통화로 멀리 사는 가족과 계속 가까이 지낼 수 있다', refs: ['The main reason is that video calls help me stay close to family members who live far away.'] },
+              { situation: '집에서 공부하면 이동 시간을 쓰지 않아도 된다', refs: ['The main reason is that studying at home removes the need to commute.'] },
+              { situation: '검증된 후기를 비교하면 더 안전하게 선택할 수 있다', refs: ['The main reason is that verified reviews help me compare options before I decide.'] },
+              { situation: '이미 매일 하는 습관이라 꾸준히 이어 가기 쉽다', refs: ['The main reason is that it already fits naturally into my daily routine.'] },
+              { situation: '새 장비를 사용하면 작업 중 고장이 줄어든다', refs: ['The main reason is that modern equipment reduces delays caused by breakdowns.'] },
+              { situation: '혼자 일정을 정하면 방해 없이 집중할 수 있다', refs: ['The main reason is that setting my own schedule lets me focus without interruptions.'] },
+              { situation: '동호회 활동은 관심사가 비슷한 사람을 만날 기회를 준다', refs: ['The main reason is that club activities introduce me to people with similar interests.'] }
+            ]
           }
         ]
       },
@@ -343,7 +355,17 @@ const PATTERNS = {
               ADJ: { label: '형용사', hint: '', eg: ['convenient', 'comfortable', 'efficient'] },
               B: { label: '반대편', hint: '', eg: ['driving', 'going to a store'] }
             },
-            check: [{ type: 'contains', value: 'than', msg: '비교급에는 than 이 필요하다' }]
+            check: [{ type: 'contains', value: 'than', msg: '비교급에는 than 이 필요하다' }],
+            drills: [
+              { situation: '정기권이 매번 표를 사는 것보다 경제적이다', refs: ['A monthly pass is much more economical than buying a separate ticket each time.'] },
+              { situation: '대면 대화가 긴 문자보다 뜻을 분명하게 전달한다', refs: ['A face-to-face conversation is much more effective than a long text message.'] },
+              { situation: '혼자 공부하는 것이 시끄러운 모임보다 집중하기 쉽다', refs: ['Studying alone is much more manageable than working in a noisy group.'] },
+              { situation: '온라인 신청이 사무실 방문보다 효율적이다', refs: ['Applying online is much more efficient than visiting an office in person.'] },
+              { situation: '최신 장비가 오래된 장비보다 안정적이다', refs: ['Modern equipment is much more dependable than older equipment.'] },
+              { situation: '집에서 운동하는 것이 붐비는 체육관보다 편하다', refs: ['Working out at home is much more comfortable than exercising in a crowded gym.'] },
+              { situation: '전문가 자료가 익명 게시물보다 신뢰할 만하다', refs: ['Information from experts is much more trustworthy than anonymous online posts.'] },
+              { situation: '그룹 수업이 혼자 연습하는 것보다 동기부여가 된다', refs: ['A group class is much more motivating than practicing by myself.'] }
+            ]
           }
         ]
       },
@@ -442,7 +464,19 @@ const PATTERNS = {
             ko: '또한 {EXTRA}입니다.',
             use: '30초가 남을 때 붙이는 추가 이유.',
             slots: { EXTRA: { label: '추가 이유', hint: '주어+동사', eg: ['they can avoid traffic and parking problems'] } },
-            check: [{ type: 'minWords', value: 4 }]
+            check: [{ type: 'minWords', value: 4 }],
+            drills: [
+              { situation: '주말에도 서비스를 이용할 수 있다', refs: ['Also, the service is available on weekends.'] },
+              { situation: '여러 출처를 한 화면에서 비교할 수 있다', refs: ['Also, users can compare several sources on one screen.'] },
+              { situation: '비슷한 관심사를 가진 사람을 새로 만날 수 있다', refs: ['Also, participants can meet new people who share their interests.'] },
+              { situation: '집에서는 방해가 적어 자기 속도로 할 수 있다', refs: ['Also, people can work at their own pace with fewer distractions at home.'] },
+              { situation: '최신 장비 덕분에 작업이 더 안전해진다', refs: ['Also, updated equipment makes the work safer.'] },
+              { situation: '자주 사용하면 자연스럽게 일상의 일부가 된다', refs: ['Also, regular use can turn it into a helpful daily habit.'] },
+              { situation: '직접 설명을 들으면 오해를 줄일 수 있다', refs: ['Also, a direct explanation can prevent unnecessary misunderstandings.'] },
+              { situation: '학생 할인 덕분에 빠듯한 예산에도 부담이 적다', refs: ['Also, the student discount makes it easier to stay within a tight budget.'] },
+              { situation: '새로운 활동은 오래 기억할 긍정적인 경험을 준다', refs: ['Also, trying the activity can create a positive and memorable experience.'] },
+              { situation: '휴대전화만 있으면 이동 중에도 이용할 수 있다', refs: ['Also, people can use it while traveling with only a smartphone.'] }
+            ]
           }
         ]
       },
@@ -613,7 +647,17 @@ const PATTERNS = {
               BAD_CONDITION: { label: '나쁜 조건', hint: '', eg: ['instructions are unclear', 'the service is slow'] },
               BAD_RESULT: { label: '나쁜 결과', hint: '', eg: ['team members waste a lot of time'] }
             },
-            check: [{ type: 'pattern', re: '^When\\s+' }]
+            check: [{ type: 'pattern', re: '^When\\s+' }],
+            drills: [
+              { situation: '정보가 오래되면 잘못된 결정을 내릴 수 있다', refs: ['When information is outdated, people can make poor decisions.'] },
+              { situation: '설명이 불분명하면 팀이 시간을 낭비한다', refs: ['When instructions are unclear, team members waste valuable time.'] },
+              { situation: '서비스가 너무 느리면 고객이 흥미를 잃는다', refs: ['When service is too slow, customers quickly lose interest.'] },
+              { situation: '가격이 지나치게 높으면 예산이 적은 사람은 이용하지 못한다', refs: ['When the price is too high, people with limited budgets cannot use the service.'] },
+              { situation: '다른 사람을 기다려야 하면 전체 일정이 늦어진다', refs: ['When people have to wait for others, the entire schedule gets delayed.'] },
+              { situation: '시설이 너무 오래되면 고장이 자주 생긴다', refs: ['When facilities are poorly maintained, equipment breaks down more often.'] },
+              { situation: '문자로만 소통하면 말투를 오해하기 쉽다', refs: ['When people communicate only by text, they can easily misunderstand the tone.'] },
+              { situation: '주변에 방해 요소가 많으면 집중력이 떨어진다', refs: ['When there are too many distractions, it becomes difficult to concentrate.'] }
+            ]
           }
         ]
       }

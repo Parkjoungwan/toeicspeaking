@@ -114,7 +114,7 @@ const Drill = {
       }));
     }
     if (mode === 'B') {
-      // 문장을 지정했으면 그 문장만 깊게 (상황 5개 전부)
+      // 문장을 지정했으면 그 문장에 연결된 모든 상황을 깊게 연습
       if (sentenceId) {
         const s = ds.find(x => x.id === sentenceId);
         if (s) return s.drills.map(d => ({ sentence: s, situation: d.situation, refs: d.refs }));
@@ -173,14 +173,25 @@ const Drill = {
     return rec;
   },
 
-  /* 녹음 결과 기록 (모드 D) */
-  submitAudio(attemptId, durationSec) {
+  /* 녹음 결과 기록. 음성은 자동 채점하지 않고 재청취 뒤 사용자가 판정한다. */
+  submitAudio(attemptId, durationSec, passed) {
     const s = Drill.state;
     if (!s) return null;
     const item = s.items[s.i];
-    const rec = { situation: item.situation, refs: item.refs, attemptId, durationSec, passed: true, checks: [], spoken: true };
+    const rec = {
+      situation: item.situation, refs: item.refs, attemptId, durationSec,
+      passed: !!passed, checks: [], spoken: true, retryCount: item.retryCount || 0
+    };
     s.results[s.i] = rec;
     return rec;
+  },
+
+  /* 실패한 문장은 세션 마지막에 한 번만 다시 출제한다. */
+  queueRetry(item) {
+    const s = Drill.state;
+    if (!s || !item || (item.retryCount || 0) >= 1) return false;
+    s.items.push({ ...item, retryCount: 1 });
+    return true;
   },
 
   next() {
@@ -218,7 +229,8 @@ const Drill = {
       mode: sum.mode, at: sum.at,
       total: sum.total, answered: sum.answered, passed: sum.passed,
       results: sum.results.map(r => ({
-        situation: r.situation, input: r.input || '', passed: !!r.passed, spoken: !!r.spoken
+        situation: r.situation, input: r.input || '', passed: !!r.passed,
+        spoken: !!r.spoken, retryCount: r.retryCount || 0
       }))
     }).catch(() => null);
   },

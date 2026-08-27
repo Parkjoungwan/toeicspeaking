@@ -270,7 +270,8 @@ const Views = {
     const a = await Store.get(id);
     if (!a) return Views.home();
     const { q, item, partKey } = findQuestion(a.questionId);
-    const P = PARTS[partKey] || PARTS[a.part];
+    const drill = Views._drillInfo(a);
+    const P = PARTS[partKey] || PARTS[a.part] || { no: a.part, name: '' };
     const w = el('div');
 
     w.appendChild(el('div', { class: 'row', style: 'margin-top:24px' },
@@ -278,11 +279,19 @@ const Views = {
     w.querySelector('#back').onclick = () => history.length > 1 ? history.back() : App.go('#/home');
 
     const head = el('div', { class: 'report-head' });
-    head.appendChild(el('h1', { style: 'margin-bottom:0' }, `Part ${P.no} · ${esc(q ? (q.tone || q.label || q.topic || q.title || '') : '')}`));
+    const headName = drill ? drill.typeName : (q ? (q.tone || q.label || q.topic || q.title || '') : '');
+    head.appendChild(el('h1', { style: 'margin-bottom:0' }, `Part ${P.no} · ${esc(headName)}`));
     head.appendChild(el('span', { class: 'pill' }, fmtDate(a.startedAt)));
+    if (drill) head.appendChild(el('span', { class: 'pill accent' }, '드릴 녹음'));
+    if (drill && drill.passed !== null) {
+      head.appendChild(el('span', { class: `pill ${drill.passed ? 'ok' : 'warn'}` }, drill.passed ? '성공' : '실패'));
+    }
     if (a.mode === 'mock') head.appendChild(el('span', { class: 'pill accent' }, `모의고사 Q${a.qNo || '?'}`));
     w.appendChild(head);
-    w.appendChild(el('p', { class: 'lede' }, `${esc(P.name)} · 답변 제한 ${a.limitSec}초`));
+    const modeName = drill && Drill.MODES[drill.mode] ? Drill.MODES[drill.mode].ko : '';
+    w.appendChild(el('p', { class: 'lede' }, drill
+      ? `${esc(modeName || '말하기')} 드릴 · 답변 제한 ${a.limitSec}초`
+      : `${esc(P.name)} · 답변 제한 ${a.limitSec}초`));
 
     /* 1) 내 녹음 */
     w.appendChild(el('h3', {}, '내 녹음'));
@@ -308,8 +317,13 @@ const Views = {
       playCard.appendChild(lost);
     }
     const again = el('div', { class: 'row', style: 'margin-top:12px' });
-    const bRetry = el('button', { class: 'btn' }, '이 문항 다시 풀기');
+    const bRetry = el('button', { class: 'btn' }, drill ? '이 드릴 다시 하기' : '이 문항 다시 풀기');
     bRetry.onclick = () => {
+      if (drill) {
+        const sentence = drill.sentenceId ? '/' + drill.sentenceId : '';
+        App.go(`#/drill/${drill.typePath}/${drill.mode}${sentence}`);
+        return;
+      }
       if (!q) return;
       const rl = Runlist.one(partKey, q);
       if (item) {
@@ -327,6 +341,45 @@ const Views = {
     again.appendChild(bDel);
     playCard.appendChild(again);
     w.appendChild(playCard);
+
+    if (drill) {
+      w.appendChild(el('h3', {}, '연습한 유형'));
+      const typeCard = el('div', { class: 'card' });
+      typeCard.innerHTML = `<div style="font-weight:650;font-size:16px">Part ${esc(drill.part)} · ${esc(drill.typeName)}</div>` +
+        (drill.typeCue ? `<div style="font-size:13.5px;color:var(--text-3);margin-top:5px">${esc(drill.typeCue)}</div>` : '');
+      w.appendChild(typeCard);
+
+      w.appendChild(el('h3', {}, '연습한 문장'));
+      const sentenceCard = el('div', { class: 'card' });
+      if (drill.sentenceTpl) {
+        if (drill.sentenceBlock) sentenceCard.appendChild(el('span', { class: 'pill accent' }, esc(drill.sentenceBlock)));
+        const tpl = el('div', { class: 'dr-tpl', style: 'margin-top:10px' });
+        tpl.innerHTML = tplHTML(drill.sentenceTpl);
+        sentenceCard.appendChild(tpl);
+        if (drill.sentenceKo) {
+          const ko = el('div', { class: 'dr-tplko' });
+          ko.innerHTML = tplHTML(drill.sentenceKo);
+          sentenceCard.appendChild(ko);
+        }
+        if (drill.situation) {
+          sentenceCard.appendChild(el('div', { class: 'dr-sit' },
+            `<span class="lab">상황</span><span class="val">${esc(drill.situation)}</span>`));
+        }
+        if (drill.refs.length) {
+          const refs = el('div', { class: 'dr-refs' });
+          refs.innerHTML = `<div class="lab">이 상황의 모범 예시</div>` +
+            drill.refs.map(r => `<div class="ref say" role="button" tabindex="0">${esc(r)}</div>`).join('');
+          refs.querySelectorAll('.ref.say').forEach(n => { n.onclick = () => Speech.passage(n.textContent, 0.8); });
+          sentenceCard.appendChild(refs);
+        }
+      } else {
+        sentenceCard.appendChild(el('div', { class: 'note' },
+          '이 녹음은 문장 정보 저장 기능을 추가하기 전에 만든 기록이라 정확한 문장은 남아 있지 않다. 유형은 위에서 확인할 수 있다.'));
+      }
+      w.appendChild(sentenceCard);
+      App.set(w);
+      return;
+    }
 
     if (!q) { App.set(w); return; }
 
@@ -558,16 +611,50 @@ const Views = {
     return c;
   },
 
+  /* 드릴 녹음 메타데이터. 구버전 기록은 questionId에서 유형까지만 복원한다. */
+  _drillInfo(a) {
+    const qid = String(a && a.questionId || '');
+    if (a.mode !== 'drill' && !qid.startsWith('drill:')) return null;
+    const saved = a.drill || {};
+    const typePath = saved.typePath || qid.replace(/^drill:/, '');
+    const found = getType(typePath);
+    const part = String(saved.part || (found && found.part) || a.part || '');
+    const typeName = saved.typeKo || (found && found.type && found.type.ko)
+      || (found && found.variant && found.variant.ko) || typePath;
+    const typeCue = saved.typeCue || (found && found.type && found.type.cue)
+      || (found && found.variant && found.variant.why) || '';
+    return {
+      typePath, part, typeName, typeCue,
+      mode: saved.mode || 'B',
+      sentenceId: saved.sentenceId || '',
+      sentenceBlock: saved.sentenceBlock || '',
+      sentenceTpl: saved.sentenceTpl || '',
+      sentenceKo: saved.sentenceKo || '',
+      situation: saved.situation || '',
+      refs: Array.isArray(saved.refs) ? saved.refs : [],
+      passed: typeof saved.passed === 'boolean' ? saved.passed : null,
+      retryCount: saved.retryCount || 0
+    };
+  },
+
   _histRow(a) {
     const { q, partKey } = findQuestion(a.questionId);
     const P = PARTS[partKey] || PARTS[a.part];
+    const drill = Views._drillInfo(a);
     const row = el('div', { class: 'hist-item' });
     const pct = Math.min(100, (a.durationSec / a.limitSec) * 100);
+    const title = drill
+      ? `Part ${drill.part} · ${drill.typeName}`
+      : `Part ${P ? P.no : a.part} · ${q ? (q.tone || q.label || q.topic || q.title || '') : a.questionId}`;
+    const context = drill && drill.sentenceTpl
+      ? `${drill.sentenceBlock ? drill.sentenceBlock + ' · ' : ''}${drill.sentenceTpl}`
+      : drill && drill.typeCue ? drill.typeCue : '';
     row.innerHTML = `
       <span class="when">${fmtDate(a.startedAt)}</span>
       <span class="what">
-        <b>Part ${P ? P.no : a.part} · ${esc(q ? (q.tone || q.label || q.topic || q.title || '') : a.questionId)}</b>
-        <span>${a.durationSec.toFixed(1)}초 / ${a.limitSec}초 · ${pct.toFixed(0)}% 사용${a.mode === 'mock' ? ' · 모의고사' : ''}</span>
+        <b>${esc(title)}</b>
+        ${context ? `<span>${esc(context)}</span>` : ''}
+        <span>${a.durationSec.toFixed(1)}초 / ${a.limitSec}초 · ${pct.toFixed(0)}% 사용${drill ? ` · 드릴 · ${drill.passed === true ? '성공' : drill.passed === false ? '실패' : '판정 전'}` : ''}${a.mode === 'mock' ? ' · 모의고사' : ''}</span>
       </span>`;
     const b = el('button', { class: 'btn' }, '리포트');
     b.onclick = () => App.go('#/review/' + a.id);
@@ -1396,11 +1483,18 @@ const DrillUI = {
               questionId: 'drill:' + DrillUI.typePath, part: T.part,
               startedAt: Date.now(), limitSec: sec,
               durationSec: Math.min(out.durationSec, sec),
-              mime: out.mime, audio: out.blob, mode: 'drill', selfCheck: {}, memo: ''
+              mime: out.mime, audio: out.blob, mode: 'drill', selfCheck: {}, memo: '',
+              drill: {
+                typePath: DrillUI.typePath, part: T.part,
+                typeKo: T.type.ko, typeCue: T.type.cue || '', mode,
+                sentenceId: item.sentence.id, sentenceBlock: item.sentence.block || '',
+                sentenceTpl: item.sentence.tpl, sentenceKo: item.sentence.ko || '',
+                situation: item.situation, refs: [...(item.refs || [])],
+                passed: null, retryCount: item.retryCount || 0
+              }
             }).catch(() => null);
           }
-          Drill.submitAudio(attemptId, sec);
-          DrillUI.showSpokenResult(st, item, attemptId);
+          DrillUI.showSpokenResult(st, item, attemptId, out ? Math.min(out.durationSec, sec) : sec);
         }
       }, 100);
     }
@@ -1413,9 +1507,10 @@ const DrillUI = {
     if (Recorder.rec && Recorder.rec.state !== 'inactive') { try { Recorder.rec.stop(); } catch (e) {} }
   },
 
-  showSpokenResult(st, item, attemptId) {
+  showSpokenResult(st, item, attemptId, durationSec) {
     st.innerHTML = '';
-    st.appendChild(el('div', { class: 'dr-verdict ok' }, '녹음 완료'));
+    const verdict = el('div', { class: 'dr-verdict' }, '녹음 완료 · 재청취 후 판정');
+    st.appendChild(verdict);
     st.appendChild(el('div', { class: 'dr-tpl' }, tplHTML(item.sentence.tpl)));
     st.appendChild(el('div', { class: 'dr-sit' },
       `<span class="lab">상황</span><span class="val">${esc(item.situation)}</span>`));
@@ -1429,7 +1524,38 @@ const DrillUI = {
       });
     }
     DrillUI.appendRefs(st, item);
-    DrillUI.appendNext(st);
+
+    const judge = el('div', { class: 'dr-selfcheck' });
+    judge.innerHTML = '<div class="title">내 녹음이 문장 골격과 상황에 맞았나?</div><div class="desc">발음·문장 완성·상황 반영을 듣고 직접 판정해라.</div>';
+    const actions = el('div', { class: 'row' });
+    const success = el('button', { class: 'btn success' }, '성공');
+    const fail = el('button', { class: 'btn fail' }, '실패 · 다시 연습');
+    actions.append(success, fail);
+    judge.appendChild(actions);
+    st.appendChild(judge);
+
+    let judged = false;
+    const choose = async passed => {
+      if (judged) return;
+      judged = true;
+      success.disabled = true; fail.disabled = true;
+      const queued = !passed && Drill.queueRetry(item);
+      Drill.submitAudio(attemptId, durationSec, passed);
+      if (attemptId) {
+        const a = await Store.get(attemptId).catch(() => null);
+        if (a) {
+          a.drill = { ...(a.drill || {}), passed, evaluatedAt: Date.now() };
+          await Store.update(a).catch(() => null);
+        }
+      }
+      verdict.className = 'dr-verdict ' + (passed ? 'ok' : 'no');
+      verdict.textContent = passed ? '성공' : (queued ? '실패 · 세션 마지막에 다시 출제' : '실패');
+      judge.remove();
+      DrillUI.appendNext(st);
+    };
+    success.onclick = () => choose(true);
+    fail.onclick = () => choose(false);
+    setTimeout(() => success.focus(), 30);
   },
 
   showResult(st, item, rec) {
@@ -1542,9 +1668,9 @@ const DrillUI = {
     const card = el('div', { class: 'card', style: 'margin-bottom:16px' });
     card.innerHTML = spoken
       ? `<div class="usage">
-          <span class="num">${sum.answered}<span style="font-size:13px;color:var(--text-3)">/${sum.total}</span></span>
-          <span class="track"><i style="width:${Math.round(sum.answered / sum.total * 100)}%;background:var(--ok)"></i></span>
-          <span class="cap">말하기 완료 · 아래에서 다시 듣고 모범 예시와 대조해라</span></div>`
+          <span class="num">${sum.passed}<span style="font-size:13px;color:var(--text-3)">/${sum.answered}</span></span>
+          <span class="track"><i style="width:${pct}%;background:${pct >= 80 ? 'var(--ok)' : 'var(--warn)'}"></i></span>
+          <span class="cap">자가 판정 성공률 ${pct}% · 실패 문장은 세션 마지막에 한 번 더 출제</span></div>`
       : `<div class="usage">
           <span class="num">${sum.passed}<span style="font-size:13px;color:var(--text-3)">/${sum.answered}</span></span>
           <span class="track"><i style="width:${pct}%;background:${pct >= 80 ? 'var(--ok)' : 'var(--warn)'}"></i></span>
@@ -1555,7 +1681,7 @@ const DrillUI = {
       const c = el('div', { class: 'card', style: 'margin-bottom:8px' });
       c.innerHTML = `
         <div class="row" style="margin-bottom:8px">
-          <span class="pill ${r.passed ? 'ok' : 'warn'}">${i + 1}. ${r.passed ? '통과' : (r.spoken ? '녹음' : '미달')}</span>
+          <span class="pill ${r.passed ? 'ok' : 'warn'}">${i + 1}. ${r.spoken ? (r.passed ? '성공' : '실패') : (r.passed ? '통과' : '미달')}${r.retryCount ? ' · 재도전' : ''}</span>
           <span style="font-size:13px;color:var(--text-2)">${esc(r.situation)}</span>
         </div>
         ${r.spoken ? '' : `<div class="dr-mine"><span class="lab">내 답</span><span class="val">${r.input ? esc(r.input) : '<i style="color:var(--text-3)">비어 있음</i>'}</span></div>`}

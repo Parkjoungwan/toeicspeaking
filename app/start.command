@@ -27,18 +27,29 @@ if [ -z "$PY" ]; then
   exit 0
 fi
 
-# 비어 있는 포트 찾기
-PORT=8777
-TRIES=0
-while [ $TRIES -lt 20 ] && lsof -i :$PORT >/dev/null 2>&1; do
-  PORT=$((PORT+1)); TRIES=$((TRIES+1))
-done
+# 브라우저 저장소는 호스트명과 포트별로 분리되므로 기존 origin으로 고정한다.
+PORT=8779
+URL="http://localhost:$PORT"
+
+if lsof -iTCP:"$PORT" -sTCP:LISTEN >/dev/null 2>&1; then
+  if curl -fsS --max-time 2 "$URL/" 2>/dev/null \
+      | grep -Fq '<title>TOEIC Speaking 실전 트레이너</title>'; then
+    open "$URL"
+    exit 0
+  fi
+  echo
+  echo "  8779 포트를 다른 프로그램이 사용 중입니다."
+  echo "  그 프로그램을 종료한 뒤 다시 실행하세요."
+  echo
+  read -n 1 -s -r -p "  아무 키나 누르면 닫힙니다."
+  exit 1
+fi
 
 echo
 echo "  TOEIC Speaking 실전 트레이너"
-echo "  http://localhost:$PORT"
+echo "  $URL"
 echo
 echo "  이 창을 닫으면 종료됩니다."
 echo
-( sleep 1; open "http://localhost:$PORT" ) &
+( sleep 1; open "$URL" ) &
 "$PY" -m http.server "$PORT"

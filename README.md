@@ -5,16 +5,17 @@ HTML / CSS / JavaScript만 사용한다. 빌드 없음, 의존성 없음, 서버
 
 ## 실행
 
-**Mac** — `app/start.command` 더블클릭
+**Mac** — `app/TOEIC Speaking 시작.app` 더블클릭.
+`start.command`도 사용할 수 있지만, 셸 시작 중 질문이 뜨면 실행 경로가 가로채질 수 있다.
 **Windows** — `app/start.bat` 더블클릭
 
-서버가 켜지고 브라우저가 열린다. 창을 닫으면 서버도 종료된다.
-포트가 쓰이고 있으면 비어 있는 포트를 자동으로 찾는다.
+서버가 켜지고 브라우저가 열린다. Mac은 실행 안내창의 `종료` 버튼, Windows는 터미널 창을 닫으면 서버도 종료된다.
+Mac은 기존 학습 기록을 계속 읽도록 `http://localhost:8779`를 고정해서 사용한다.
 
 터미널을 쓴다면:
 
 ```bash
-python3 -m http.server 8777 --directory app
+python3 -m http.server 8779 --directory app
 ```
 
 ### index.html 을 그냥 열어도 되나
@@ -25,7 +26,7 @@ python3 -m http.server 8777 --directory app
 빈 DB 가 된다. 그래서 `file://` 로 열면 앱이 매 저장마다 학습 기록을 localStorage 에 복사해 두고,
 다음에 열 때 되살린다.
 
-| | index.html 더블클릭 | start.command / start.bat |
+| | index.html 더블클릭 | Mac 시작 앱 / start.bat |
 |---|---|---|
 | 화면·문장 세트·드릴·TTS | 정상 | 정상 |
 | 녹음·바로 재생 | 정상 | 정상 |
@@ -43,7 +44,7 @@ Python 이 없으면 스크립트가 알아서 `index.html` 을 열고 안내한
 | | 내용 |
 |---|---|
 | **연습** | 2026년 현행 11문항 구조 그대로. 준비·답변 타이머, 자동 녹음, 재청취, 모범답안 대조, 자가 채점 |
-| **문장 세트** | Part 2–5 유형별 만능 문장 70개 + 빈칸 채우기 드릴 4모드 (상황 310개) |
+| **문장 세트** | Part 2–5 유형별 만능 문장 70개 + 빈칸 채우기 드릴 4모드 (상황 346개) |
 | **공식 자료** | ETS·한국TOEIC위원회 공식 자료로 이동하는 외부 링크 34개 |
 | **기록** | 녹음 보관, 시간 활용률 추이, 반복 오류 메모 |
 

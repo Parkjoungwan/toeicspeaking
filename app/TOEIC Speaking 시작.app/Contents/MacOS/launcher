@@ -1,0 +1,56 @@
+#!/bin/bash
+# Finder가 이 앱을 직접 실행하므로 사용자의 zsh 초기화 질문에 영향을 받지 않는다.
+set -u
+
+APP_DIR="$(cd "$(dirname "$0")/../../.." && pwd)"
+cd "$APP_DIR" || exit 1
+
+PY=""
+for candidate in python3 python; do
+  if command -v "$candidate" >/dev/null 2>&1 \
+      && "$candidate" -c 'import sys; sys.exit(0 if sys.version_info[0] == 3 else 1)' 2>/dev/null; then
+    PY="$candidate"
+    break
+  fi
+done
+
+if [ -z "$PY" ]; then
+  /usr/bin/osascript -e 'display alert "Python 3이 없습니다" message "서버 없이 index.html을 엽니다. 이전 녹음 오디오는 브라우저를 완전히 종료하면 사라질 수 있습니다." as warning'
+  /usr/bin/open "$APP_DIR/index.html"
+  exit 0
+fi
+
+PORT=8779
+URL="http://localhost:$PORT"
+
+# 브라우저 저장소는 호스트명과 포트별로 분리된다. 과거 기록과 같은 origin을 계속 쓴다.
+if /usr/sbin/lsof -iTCP:"$PORT" -sTCP:LISTEN >/dev/null 2>&1; then
+  if /usr/bin/curl -fsS --max-time 2 "$URL/" 2>/dev/null \
+      | /usr/bin/grep -Fq '<title>TOEIC Speaking 실전 트레이너</title>'; then
+    /usr/bin/open "$URL"
+    /usr/bin/osascript -e 'display alert "이미 실행 중입니다" message "기존 TOEIC Speaking 창을 열었습니다." as informational'
+    exit 0
+  fi
+  /usr/bin/osascript -e 'display alert "실행할 수 없습니다" message "8779 포트를 다른 프로그램이 사용 중입니다. 그 프로그램을 종료한 뒤 다시 실행하세요." as critical'
+  exit 1
+fi
+
+"$PY" -m http.server "$PORT" --bind 127.0.0.1 --directory "$APP_DIR" &
+SERVER_PID=$!
+
+cleanup() {
+  if /bin/kill -0 "$SERVER_PID" >/dev/null 2>&1; then
+    /bin/kill "$SERVER_PID" >/dev/null 2>&1
+    wait "$SERVER_PID" 2>/dev/null
+  fi
+}
+trap cleanup EXIT HUP INT TERM
+
+sleep 1
+if ! /bin/kill -0 "$SERVER_PID" >/dev/null 2>&1; then
+  /usr/bin/osascript -e 'display alert "실행할 수 없습니다" message "로컬 서버를 시작하지 못했습니다." as critical'
+  exit 1
+fi
+
+/usr/bin/open "$URL"
+/usr/bin/osascript -e 'display dialog "TOEIC Speaking 앱이 실행 중입니다. 이 창의 종료 버튼을 누르면 로컬 서버도 종료됩니다." with title "TOEIC Speaking 실전 트레이너" buttons {"종료"} default button "종료"'

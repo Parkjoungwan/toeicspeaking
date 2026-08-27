@@ -472,6 +472,16 @@ body.drill-mode { overflow: hidden; }
 .dr-verdict.ok { background: var(--ok-soft); color: var(--ok); }
 .dr-verdict.no { background: var(--warn-soft); color: var(--warn); }
 
+.dr-selfcheck {
+  margin-top: 16px; padding: 15px 16px; border: 1px solid var(--line);
+  border-radius: var(--radius); background: var(--surface);
+}
+.dr-selfcheck .title { font-weight: 650; font-size: 15px; }
+.dr-selfcheck .desc { color: var(--text-3); font-size: 12.5px; margin: 2px 0 11px; }
+.btn.success { background: var(--ok); border-color: var(--ok); color: #fff; font-weight: 650; }
+.btn.fail { background: var(--warn-soft); border-color: var(--warn); color: var(--warn); font-weight: 650; }
+.btn:disabled { opacity: .55; cursor: default; }
+
 .dr-mine {
   display: flex; gap: 12px; align-items: flex-start; margin-top: 12px;
   background: var(--surface-2); border-radius: var(--radius); padding: 13px 16px;
